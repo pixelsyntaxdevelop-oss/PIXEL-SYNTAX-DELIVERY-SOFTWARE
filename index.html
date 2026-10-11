@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Pixel Syntax Delivery</title>
+    <meta name="description" content="Pixel Syntax - Fleet Logistics & Operations Portal" />
+    <meta property="og:title" content="Pixel Syntax Delivery" />
+    <meta property="og:description" content="Pixel Syntax - Fleet Logistics & Operations Portal" />
+    <link rel="icon" type="image/png" href="/pixel-syntax-logo.png" />
+    <link rel="alternate icon" type="image/png" href="/pixel-syntax-logo.png" />
+    <link rel="shortcut icon" href="/pixel-syntax-logo.png" />
+    <link rel="apple-touch-icon" href="/pixel-syntax-logo.png" />
+    <link rel="preload" as="image" href="/pixel-syntax-logo.png" type="image/jpeg" />
+    <link rel="preload" as="image" href="/pixel-syntax-logo.png" type="image/png" />
+    <meta name="theme-color" content="#059669" />
+    <script>
+      (function() {
+        try {
+          var _origFetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() { return _origFetch; },
+            set: function(fn) { _origFetch = fn; },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          console.warn('Fetch setter patch:', e);
+        }
+
+        // Safe alert and window.open polyfill for iframe sandbox environments
+        try {
+          window.alert = function(msg) {
+            console.warn('[Notice]:', msg);
+            try {
+              var toast = document.createElement('div');
+              toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e293b;color:#f8fafc;padding:12px 20px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.3);z-index:999999;max-width:400px;font-size:14px;font-family:system-ui,-apple-system,sans-serif;line-height:1.4;border-left:4px solid #10b981;transition:all 0.3s ease;opacity:0;transform:translateY(10px);pointer-events:none;';
+              toast.textContent = String(msg);
+              (document.body || document.documentElement).appendChild(toast);
+              requestAnimationFrame(function() {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateY(0)';
+              });
+              setTimeout(function() {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(function() {
+                  if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 300);
+              }, 4000);
+            } catch (e) {}
+          };
+
+          var _origOpen = window.open;
+          window.open = function(url, target, features) {
+            try {
+              return _origOpen.call(window, url, target, features);
+            } catch (err) {
+              console.warn('Blocked window.open inside iframe:', err);
+              if (url && typeof url === 'string') {
+                var a = document.createElement('a');
+                a.href = url;
+                a.target = target || '_blank';
+                a.rel = 'noopener noreferrer';
+                a.click();
+              }
+              return null;
+            }
+          };
+        } catch (e) {}
+
+        // Authoritative production Allied bootstrap branding for static shell / first paint
+        window.__ALLIED_BOOTSTRAP_BRANDING__ = {
+          tenantId: 'company_allied',
+          companyName: 'Pixel Syntax',
+          portalTitle: 'Pixel Syntax',
+          portalSubtitle: 'Pixel Syntax',
+          loginTagline: 'Fleet & Logistics Management Portal',
+          logoUrl: '/pixel-syntax-logo.png',
+          mainLogoUrl: '/pixel-syntax-logo.png',
+          headerLogoUrl: '/pixel-syntax-logo.png',
+          loginHeroUrl: '/pixel-syntax-logo.png',
+          faviconUrl: '/pixel-syntax-logo.png',
+          primaryColor: '#059669',
+          isPlatformDomain: false
+        };
+
+        // Synchronous cache seed and instant image preloading
+        try {
+          var raw = localStorage.getItem('apex_cached_login_branding_company_allied');
+          var b = null;
+          if (raw) {
+            b = JSON.parse(raw);
+            if (b && typeof b === 'object') {
+              if (b.portalTitle === 'Operations Portal') b.portalTitle = 'Pixel Syntax';
+              if (b.portalSubtitle === 'Operations Portal') b.portalSubtitle = 'Pixel Syntax';
+              if (!b.loginHeroUrl || b.loginHeroUrl.includes('placeholder')) b.loginHeroUrl = '/pixel-syntax-logo.png';
+              if (!b.mainLogoUrl || b.mainLogoUrl.includes('svg')) b.mainLogoUrl = '/pixel-syntax-logo.png';
+              if (!b.headerLogoUrl || b.headerLogoUrl.includes('svg')) b.headerLogoUrl = '/pixel-syntax-logo.png';
+              b.faviconUrl = '/pixel-syntax-logo.png';
+              localStorage.setItem('apex_cached_login_branding_company_allied', JSON.stringify(b));
+            }
+          } else {
+            b = window.__ALLIED_BOOTSTRAP_BRANDING__;
+            localStorage.setItem('apex_cached_login_branding_company_allied', JSON.stringify(b));
+          }
+
+          if (b) {
+            if (b.headerLogoUrl) {
+              window.__ALLIED_BOOTSTRAP_BRANDING__.headerLogoUrl = b.headerLogoUrl;
+            }
+            if (b.mainLogoUrl) {
+              window.__ALLIED_BOOTSTRAP_BRANDING__.mainLogoUrl = b.mainLogoUrl;
+              window.__ALLIED_BOOTSTRAP_BRANDING__.logoUrl = b.mainLogoUrl;
+            }
+            if (b.loginHeroUrl) {
+              window.__ALLIED_BOOTSTRAP_BRANDING__.loginHeroUrl = b.loginHeroUrl;
+            }
+            if (b.companyName) {
+              window.__ALLIED_BOOTSTRAP_BRANDING__.companyName = b.companyName;
+            }
+
+            // Trigger immediate browser image preloads
+            var preloadUrls = [b.loginHeroUrl, b.headerLogoUrl, b.mainLogoUrl, '/pixel-syntax-logo.png'];
+            for (var i = 0; i < preloadUrls.length; i++) {
+              var u = preloadUrls[i];
+              if (u) {
+                var img = new Image();
+                img.referrerPolicy = 'no-referrer';
+                img.src = u;
+              }
+            }
+          }
+        } catch (err) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

@@ -1,0 +1,138 @@
+/**
+ * Multi-language Translation Dictionary (English / Arabic RTL)
+ */
+
+export type LanguageMode = 'EN' | 'AR';
+
+export const translations = {
+  EN: {
+    appTitle: "ApexFleet ERP",
+    softwareCompany: "Software Engineering & Tech Division",
+    fleetManagement: "Fleet, Logistics & ERP Operations",
+    searchPlaceholder: "Search riders, vehicles, orders, employees, reports...",
+    language: "Language",
+    theme: "Theme",
+    branch: "Branch",
+    allBranches: "All Branches (UAE & MENA)",
+    aiCopilot: "AI Fleet & Tech Copilot",
+    notifications: "Alerts & Notifications",
+    
+    // Navigation Modules
+    software_dashboard: "Software & Tech Hub",
+    fleet_dashboard: "Real-time Fleet ERP",
+    riders_drivers: "Riders & Drivers",
+    vehicles_fleet: "Vehicles & Maintenance",
+    dispatch_orders: "Dispatch & Live Orders",
+    gps_tracking: "GPS, Replay & Geofence",
+    hr_payroll: "HR & Payroll",
+    finance: "Finance & Revenues",
+    documents_vault: "Document Vault & Visas",
+    reports_analytics: "Reports & Analytics",
+    ai_hub: "AI Intelligence Hub",
+    roles_permissions: "Roles & RBAC Matrix",
+    settings_audit: "Settings & Audit Logs",
+    
+    // Quick Stats
+    totalRiders: "Total Riders",
+    onlineRiders: "Online Riders",
+    activeDeliveries: "Active Deliveries",
+    delayedDeliveries: "Delayed Deliveries",
+    revenueToday: "Revenue Today",
+    mrrTech: "Tech MRR",
+    expiringDocs: "Expiring Documents",
+    fleetStatus: "Fleet Availability",
+    
+    // Actions
+    exportData: "Export Report (PDF/CSV)",
+    autoDispatch: "Run AI Auto-Dispatch",
+    addRider: "Add New Rider",
+    addVehicle: "Register Vehicle",
+    runPayroll: "Process Monthly Payroll",
+    filterStatus: "Filter Status",
+    viewDetails: "View Details",
+    saveChanges: "Save Changes",
+    cancel: "Cancel",
+    confirm: "Confirm Action",
+    
+    // Common Status Labels
+    ONLINE: "Online",
+    DELIVERING: "In Transit",
+    OFFLINE: "Offline",
+    ON_LEAVE: "On Leave",
+    SUSPENDED: "Suspended",
+    AVAILABLE: "Available",
+    IN_USE: "In Use",
+    MAINTENANCE: "In Maintenance",
+    OUT_OF_SERVICE: "Out of Service",
+    PENDING: "Pending",
+    ASSIGNED: "Assigned",
+    DELIVERED: "Delivered",
+    DELAYED: "Delayed",
+    CANCELLED: "Cancelled",
+  },
+  AR: {
+    appTitle: "أبيكس فليت نُظُم إدارة الموارد",
+    softwareCompany: "قسم تطوير البرمجيات والتقنية",
+    fleetManagement: "إدارة الأسطول واللوجستيات والعمليات",
+    searchPlaceholder: "ابحث عن السائقين، المركبات، الطلبات، الموظفين، التقارير...",
+    language: "اللغة",
+    theme: "المظهر",
+    branch: "الفرع",
+    allBranches: "جميع الفروع (الإمارات والشرق الأوسط)",
+    aiCopilot: "مساعد الذكاء الاصطناعي للأسطول",
+    notifications: "التنبيهات الإدارية",
+    
+    // Navigation Modules
+    software_dashboard: "مركز البرمجيات والتقنية",
+    fleet_dashboard: "لوحة تشغيل الأسطول واللوجستيات",
+    riders_drivers: "إدارة السائقين والمناديب",
+    vehicles_fleet: "المركبات والصيانة الدورية",
+    dispatch_orders: "التوزيع والتوجيه المباشر",
+    gps_tracking: "التتبع المباشر والنطاق الجغرافي",
+    hr_payroll: "الموارد البشرية والرواتب",
+    finance: "المالية والإيرادات",
+    documents_vault: "خزينة المستندات والتأشيرات",
+    reports_analytics: "التقارير والتحليلات الشاملة",
+    ai_hub: "مركز الذكاء الاصطناعي",
+    roles_permissions: "الأدوار والتراخيص المتقدمة",
+    settings_audit: "الإعدادات وسجل العمليات",
+    
+    // Quick Stats
+    totalRiders: "إجمالي المناديب",
+    onlineRiders: "المناديب النشطين",
+    activeDeliveries: "الطلبات الجارية",
+    delayedDeliveries: "الطلبات المتأخرة",
+    revenueToday: "إيرادات اليوم",
+    mrrTech: "الإيراد الشهر المتكرر للتقنية",
+    expiringDocs: "مستندات تنتهي قريباً",
+    fleetStatus: "جاهزية الأسطول",
+    
+    // Actions
+    exportData: "تصدير التقرير (PDF/CSV)",
+    autoDispatch: "تشغيل التوزيع الذكي (AI)",
+    addRider: "إضافة مندوب جديد",
+    addVehicle: "تسجيل مركبة جديدة",
+    runPayroll: "معالجة رواتب الشهر",
+    filterStatus: "تصفية بالحالة",
+    viewDetails: "عرض التفاصيل",
+    saveChanges: "حفظ التغييرات",
+    cancel: "إلغاء",
+    confirm: "تأكيد الإجراء",
+    
+    // Common Status Labels
+    ONLINE: "متصل",
+    DELIVERING: "قيد التوصيل",
+    OFFLINE: "غير متصل",
+    ON_LEAVE: "في إجازة",
+    SUSPENDED: "موقوف",
+    AVAILABLE: "متاح",
+    IN_USE: "قيد الاستخدام",
+    MAINTENANCE: "تحت الصيانة",
+    OUT_OF_SERVICE: "خارج الخدمة",
+    PENDING: "قيد الانتظار",
+    ASSIGNED: "مُسنَد",
+    DELIVERED: "تم التسليم",
+    DELAYED: "متأخر",
+    CANCELLED: "ملغى",
+  }
+};
