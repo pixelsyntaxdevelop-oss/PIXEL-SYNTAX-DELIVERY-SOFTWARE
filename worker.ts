@@ -97,7 +97,7 @@ export interface AuthSession {
 const activeSessions = new Map<string, AuthSession>();
 const revokedTokens = new Set<string>();
 
-const WORKER_SESSION_SECRET = 'allied_delivery_authoritative_session_secret_2026_super_secure';
+let WORKER_SESSION_SECRET = '';
 
 function createSignedToken(payload: {
   u: string;
@@ -108,6 +108,7 @@ function createSignedToken(payload: {
   rm: number;
   n: string;
 }): string {
+  if (!WORKER_SESSION_SECRET) throw new Error('WORKER_SESSION_SECRET is not configured');
   const jsonStr = JSON.stringify(payload);
   const b64 = Buffer.from(jsonStr).toString('base64url');
   const hmac = crypto.createHmac('sha256', WORKER_SESSION_SECRET).update(b64).digest('hex');
@@ -115,7 +116,7 @@ function createSignedToken(payload: {
 }
 
 function verifySignedToken(token: string): any | null {
-  if (!token || !token.startsWith('apex_sess_')) return null;
+  if (!WORKER_SESSION_SECRET || !token || !token.startsWith('apex_sess_')) return null;
   const parts = token.substring('apex_sess_'.length).split('.');
   if (parts.length !== 2) return null;
   const [b64, signature] = parts;
@@ -5828,6 +5829,7 @@ async function handlePlatformAdminWorkerRoutes(
  */
 export default {
   async fetch(request: Request, env: any, ctx: any): Promise<Response> {
+    WORKER_SESSION_SECRET = env?.WORKER_SESSION_SECRET || '';
     const url = new URL(request.url);
     const pathname = url.pathname;
     const cleanPath = pathname.replace(/\/+$/, '') || '/';

@@ -7,7 +7,7 @@ import { getSupabaseClient } from './supabaseDb';
 const PERSISTENT_SESSIONS_FILE = path.join(process.cwd(), 'data', 'persistent_user_sessions.json');
 const PERSISTENT_REVOKED_FILE = path.join(process.cwd(), 'data', 'persistent_revoked_tokens.json');
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'allied_delivery_authoritative_session_secret_2026_super_secure';
+const SESSION_SECRET = process.env.SESSION_SECRET || '';
 
 export interface AuthSession {
   token: string;
@@ -94,6 +94,7 @@ export function createSignedToken(payload: {
   rm: number;
   n: string;
 }): string {
+  if (!SESSION_SECRET) throw new Error('SESSION_SECRET is not configured');
   const jsonStr = JSON.stringify(payload);
   const b64 = Buffer.from(jsonStr).toString('base64url');
   const hmac = crypto.createHmac('sha256', SESSION_SECRET).update(b64).digest('hex');
@@ -101,7 +102,7 @@ export function createSignedToken(payload: {
 }
 
 export function verifySignedToken(token: string): any | null {
-  if (!token || !token.startsWith('apex_sess_')) return null;
+  if (!SESSION_SECRET || !token || !token.startsWith('apex_sess_')) return null;
   const parts = token.substring('apex_sess_'.length).split('.');
   if (parts.length !== 2) return null;
   const [b64, signature] = parts;
@@ -261,7 +262,7 @@ export function createSession(
   const ipAddress = getClientIp(req);
   const userAgent = (req?.headers?.['user-agent'] as string) || undefined;
 
-  const tenantId = user.tenantId || user.tenant_id || 'company_pixel_syntax';
+  const tenantId = user.tenantId || user.tenant_id || 'company_allied';
   const role = user.role || 'VIEWER';
 
   // Issue tamper-proof signed token that can survive server recycles and be authoritatively validated

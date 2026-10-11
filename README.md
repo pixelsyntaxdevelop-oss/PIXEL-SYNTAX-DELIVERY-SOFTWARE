@@ -10,6 +10,10 @@ This private repository contains the application source with all Allied operatio
 - Custom domain: `deliverysoftwarepixel.site`
 - R2 bucket: `pixel-syntax-delivery-demo-documents`
 - Build: `npm install` then `npm run build`
+- R2 buckets: `pixel-syntax-delivery-demo-documents` and `pixel-syntax-delivery-demo-documents-preview`
+- Worker secret: `WORKER_SESSION_SECRET` (generate a unique random value)
+- Build variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- Runtime secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `WORKER_SESSION_SECRET`
 
 Use a separate Supabase project, Cloudflare Worker, and R2 bucket for this demo. Configure its Supabase URL and server-only keys in the Cloudflare Worker. Apply the schema migrations in `supabase/migrations` to that new project only. Do not connect the Allied production database, Worker, or document bucket.
 
