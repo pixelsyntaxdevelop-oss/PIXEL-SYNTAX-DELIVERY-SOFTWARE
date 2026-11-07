@@ -253,7 +253,7 @@ export const Header: React.FC<HeaderProps> = ({
     searchResults.projects.length;
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-2.5 sm:px-6 shrink-0 sticky top-0 z-30 shadow-xs">
+    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-1 px-2 sm:px-6 shrink-0 sticky top-0 z-30 shadow-xs">
       {/* Mobile Expandable Search Bar Overlay */}
       {isMobileSearchExpanded && (
         <div className="absolute inset-0 bg-white dark:bg-slate-900 z-50 flex items-center px-3 gap-2 border-b border-slate-200 dark:border-slate-800">
@@ -291,7 +291,7 @@ export const Header: React.FC<HeaderProps> = ({
       )}
 
       {/* Left: Mobile Toggle & ALLIED Brand Logo */}
-      <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-4 min-w-0 shrink">
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
@@ -302,14 +302,14 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
         {headerLogoUrl && !logoImageError ? (
-          <div className="flex items-center select-none shrink-0" id="header-tenant-logo-container">
+          <div className="flex items-center select-none min-w-0 max-w-[96px] sm:max-w-none" id="header-tenant-logo-container">
             <img
               src={headerLogoUrl}
               alt=""
               aria-label={activeTenantName || 'Pixel Syntax Delivery Software'}
               referrerPolicy="no-referrer"
               onError={() => setLogoImageError(true)}
-              className="max-h-[34px] sm:max-h-[42px] w-auto object-contain object-center transition-all drop-shadow-xs"
+              className="max-h-[34px] sm:max-h-[42px] w-auto max-w-full object-contain object-center transition-all drop-shadow-xs"
               style={{
                 maxHeight: '42px',
                 width: 'auto',
@@ -320,11 +320,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         ) : isAlliedContext ? (
           /* Authoritative Allied Company Logo mark on first paint */
-          <div className="flex items-center select-none shrink-0" id="authoritative-allied-header-logo">
+          <div className="flex items-center select-none min-w-0 max-w-[96px] sm:max-w-none" id="authoritative-allied-header-logo">
             <img
               src="/allied-logo-original.png"
               alt="Pixel Syntax Delivery Software"
-              className="max-h-[42px] w-auto object-contain object-center transition-all drop-shadow-xs"
+              className="max-h-[42px] w-auto max-w-full object-contain object-center transition-all drop-shadow-xs"
               style={{
                 maxHeight: '42px',
                 width: 'auto',
@@ -555,7 +555,7 @@ export const Header: React.FC<HeaderProps> = ({
       )}
 
       {/* Right: Tenant Company & Status Badges, Icons & User Profile */}
-      <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-0.5 sm:gap-2.5 shrink-0">
         {/* Mobile Search Icon Toggle */}
         <button
           onClick={() => {
