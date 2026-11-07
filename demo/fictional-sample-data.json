@@ -1,0 +1,22 @@
+{
+  "_notice": "FICTIONAL DEMO DATA ONLY. No real people, customers, vehicle registrations, contact details or production identifiers. Not loaded automatically.",
+  "company": {
+    "id": "demo_company_001",
+    "name": "Example Courier Operations",
+    "city": "Demo City",
+    "currency": "AED"
+  },
+  "riders": [
+    { "id": "DEMO-R001", "displayName": "Demo Rider One", "status": "ACTIVE", "assignedVehicleId": "DEMO-V001" },
+    { "id": "DEMO-R002", "displayName": "Demo Rider Two", "status": "AVAILABLE", "assignedVehicleId": null },
+    { "id": "DEMO-R003", "displayName": "Demo Rider Three", "status": "ON_LEAVE", "assignedVehicleId": null }
+  ],
+  "vehicles": [
+    { "id": "DEMO-V001", "type": "Motorbike", "status": "ASSIGNED", "assignedRiderId": "DEMO-R001" },
+    { "id": "DEMO-V002", "type": "Motorbike", "status": "AVAILABLE", "assignedRiderId": null }
+  ],
+  "sampleOrders": [
+    { "id": "DEMO-O001", "riderId": "DEMO-R001", "status": "DELIVERED", "amountAed": 18.5 },
+    { "id": "DEMO-O002", "riderId": "DEMO-R001", "status": "IN_PROGRESS", "amountAed": 12 }
+  ]
+}
