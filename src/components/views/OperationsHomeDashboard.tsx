@@ -517,7 +517,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
       </div>
 
       {/* Section 2: Core Operational KPIs (Live Backend Data) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {/* 1. EMPLOYEES KPI */}
         {(roleFilter === 'ALL' || roleFilter === 'HR' || roleFilter === 'OPERATIONS') && (
           <div
@@ -535,7 +535,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-3xl font-black text-slate-900 dark:text-white">
               {metrics.employees.total}
             </div>
-            <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
               <div>
                 <span className="text-slate-400 block text-[10px]">Active</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">{metrics.employees.active}</span>
@@ -569,7 +569,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-3xl font-black text-slate-900 dark:text-white">
               {metrics.fleet.total}
             </div>
-            <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
               <div>
                 <span className="text-slate-400 block text-[10px]">Assigned</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">{metrics.fleet.assigned}</span>
@@ -603,7 +603,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-3xl font-black text-slate-900 dark:text-white">
               {metrics.sims.total}
             </div>
-            <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
               <div>
                 <span className="text-slate-400 block text-[10px]">Assigned</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">{metrics.sims.assigned}</span>
@@ -637,7 +637,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-3xl font-black text-slate-900 dark:text-white">
               {metrics.passports.withCompany + metrics.passports.withRider}
             </div>
-            <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
               <div>
                 <span className="text-slate-400 block text-[10px]">In Safe Box</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">{metrics.passports.withCompany}</span>
