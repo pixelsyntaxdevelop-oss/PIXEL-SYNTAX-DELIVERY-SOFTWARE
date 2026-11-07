@@ -496,6 +496,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
                   <input
                     type="text"
                     id="login-identifier"
+                    aria-label="Email address"
                     autoComplete="username"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
@@ -531,6 +532,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
                   <input
                     type={showPassword ? 'text' : 'password'}
                     id="login-password"
+                    aria-label="Password"
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -563,6 +565,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
                       type="button"
                       onClick={handleRefreshMathChallenge}
                       title="New calculation"
+                      aria-label="Generate a new security calculation"
                       className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
                     >
                       <RefreshCw className="w-4 h-4" />
@@ -574,6 +577,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
                     <input
                       type="number"
                       id="login-math-answer"
+                      aria-label="Security calculation answer"
                       value={userMathAnswer}
                       onChange={(e) => {
                         setUserMathAnswer(e.target.value);
@@ -625,7 +629,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
                     <span>Signing in...</span>
                   </>
                 ) : (
-                  <span>Login</span>
+                  <span>Sign in securely</span>
                 )}
               </button>
             </form>
