@@ -424,7 +424,9 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             onClick={loadDashboardData}
             disabled={refreshing}
             className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-200 dark:border-slate-700"
-            title="Refresh Live Data"
+            title={refreshing ? 'Refreshing dashboard data' : 'Refresh dashboard data'}
+            aria-label={refreshing ? 'Refreshing dashboard data' : 'Refresh dashboard data'}
+            aria-busy={refreshing}
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-blue-600' : ''}`} />
           </button>
