@@ -142,8 +142,13 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
       </div>
 
       {/* Operational Data Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200 border-collapse">
+      <div
+        className="max-w-full overflow-x-auto overscroll-x-contain"
+        role="region"
+        aria-label="Documents table, scroll horizontally to view all columns"
+        tabIndex={0}
+      >
+        <table className="w-full min-w-max text-left text-xs text-slate-700 dark:text-slate-200 border-collapse">
           <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
             <tr>
               <th className="w-10 px-3 py-3 text-center">
