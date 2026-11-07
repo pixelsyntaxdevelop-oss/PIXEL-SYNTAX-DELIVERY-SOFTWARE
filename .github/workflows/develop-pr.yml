@@ -1,0 +1,27 @@
+name: Propose develop changes to main
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or reuse a develop-to-main PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          existing=$(gh pr list --head develop --base main --state open --json number --jq 'length')
+          if [ "$existing" -eq 0 ]; then
+            gh pr create --base main --head develop --title "Merge development updates into main" --body "Automated proposal for genuine changes pushed to develop. Review code and checks before merging."
+          else
+            echo "Existing PR will update automatically with new develop commits."
+          fi
