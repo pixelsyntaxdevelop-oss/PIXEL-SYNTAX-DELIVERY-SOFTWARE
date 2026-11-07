@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Search,
   Home,
@@ -75,6 +75,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const selectedMod = activeModule || currentModule || 'doc_expiry_listing';
   const [searchFilter, setSearchFilter] = useState('');
+
+  // Allow keyboard users to dismiss the mobile navigation drawer.
+  useEffect(() => {
+    if (!isMobileOpen || !onCloseMobile) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseMobile();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isMobileOpen, onCloseMobile]);
 
   const handleSelectModule = (mod: NavigationModule) => {
     onSelectModule(mod);
@@ -233,11 +243,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isMobileOpen && (
         <div
           onClick={onCloseMobile}
+          aria-hidden="true"
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"
         />
       )}
 
       <aside
+        aria-label="Main navigation"
         className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-30 flex flex-col h-[100dvh] lg:h-screen bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800 transition-transform duration-200 shrink-0 select-none ${
           isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         } ${collapsed ? 'w-[85vw] max-w-[300px] lg:w-16' : 'w-[85vw] max-w-[300px] lg:w-72'}`}
@@ -262,6 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={onCloseMobile}
               className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
               title="Close Navigation Drawer"
+              aria-label="Close navigation drawer"
             >
               <X className="w-5 h-5" />
             </button>
