@@ -434,13 +434,18 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
       </div>
 
       {/* Role Filter Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-        <span className="text-slate-400 font-bold uppercase text-[10px] mr-1">Role View:</span>
+      <div
+        role="group"
+        aria-label="Filter dashboard by role"
+        className="flex items-center gap-2 max-w-full overflow-x-auto overscroll-x-contain pb-2 text-xs"
+      >
+        <span className="shrink-0 text-slate-400 font-bold uppercase text-[10px] mr-1">Role View:</span>
         {(['ALL', 'HR', 'FLEET', 'OPERATIONS', 'ACCOUNTS'] as const).map((rf) => (
           <button
             key={rf}
             onClick={() => setRoleFilter(rf)}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all whitespace-nowrap ${
+            aria-pressed={roleFilter === rf}
+            className={`shrink-0 min-h-[40px] px-3 py-2 rounded-full font-bold transition-all whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
               roleFilter === rf
                 ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
