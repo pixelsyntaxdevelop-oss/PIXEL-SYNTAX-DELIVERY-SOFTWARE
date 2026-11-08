@@ -602,15 +602,15 @@ export const ImportEmployeesModal: React.FC<ImportEmployeesModalProps> = ({
   const inactiveCount = parsedRows.filter((r) => r.status === 'Inactive').length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-4xl w-full min-w-0 max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] shadow-2xl overflow-y-auto overscroll-contain">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800/40">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="shrink-0 p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Bulk Import Employees</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Import employees via official Excel XLSX template with automatic duplicate detection
@@ -619,7 +619,8 @@ export const ImportEmployeesModal: React.FC<ImportEmployeesModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Close bulk import dialog"
+            className="shrink-0 p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -627,9 +628,9 @@ export const ImportEmployeesModal: React.FC<ImportEmployeesModalProps> = ({
 
         {/* Step 1: Upload */}
         {step === 'UPLOAD' && (
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-6">
             {/* Download Template Bar */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50/80 to-slate-50 dark:from-emerald-950/20 dark:to-slate-800/50 border border-emerald-200/80 dark:border-emerald-800/50 flex items-center justify-between">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50/80 to-slate-50 dark:from-emerald-950/20 dark:to-slate-800/50 border border-emerald-200/80 dark:border-emerald-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
                   <FileSpreadsheet className="w-5 h-5" />
@@ -664,7 +665,7 @@ export const ImportEmployeesModal: React.FC<ImportEmployeesModalProps> = ({
             </div>
 
             {/* Template Formatting Guarantees Badge */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 text-xs">
                 <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mb-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -703,7 +704,7 @@ export const ImportEmployeesModal: React.FC<ImportEmployeesModalProps> = ({
               onDragLeave={() => setDragActive(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`p-10 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
+              className={`p-5 sm:p-10 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
                 dragActive
                   ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30'
                   : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 bg-slate-50/30 dark:bg-slate-800/20'
