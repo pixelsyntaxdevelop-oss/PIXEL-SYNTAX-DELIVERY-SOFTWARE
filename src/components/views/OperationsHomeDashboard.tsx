@@ -111,6 +111,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
           <button
             type="button"
             aria-label={`Close ${typeof label === 'string' ? label : 'KPI'} help`}
+            aria-describedby={`kpi-help-close-hint-${id}`}
             onClick={(event) => {
               event.stopPropagation();
               onClose();
@@ -120,6 +121,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
+          <span id={`kpi-help-close-hint-${id}`} className="sr-only">Closes this help note and returns focus to its information button.</span>
         </div>
       </div>
     )}
