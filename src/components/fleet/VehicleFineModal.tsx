@@ -79,7 +79,9 @@ export const VehicleFineModal: React.FC<VehicleFineModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+            type="button"
+            aria-label="Close traffic fine form"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -191,14 +193,14 @@ export const VehicleFineModal: React.FC<VehicleFineModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100"
+              className="min-h-11 px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 text-xs font-semibold rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-xs flex items-center space-x-1.5 disabled:opacity-50"
+              className="min-h-11 px-5 py-2 text-xs font-semibold rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-xs flex items-center space-x-1.5 disabled:opacity-50"
             >
               {loading ? <span>Logging...</span> : <span>Save Traffic Fine</span>}
             </button>
