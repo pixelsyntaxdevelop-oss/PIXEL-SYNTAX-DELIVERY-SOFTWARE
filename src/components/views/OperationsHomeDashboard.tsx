@@ -24,6 +24,7 @@ import {
   ArrowUpRight,
   Sparkles,
   Info,
+  X,
 } from 'lucide-react';
 import { masterEmployeeService } from '../../services/masterEmployeeService';
 import { NavigationModule, SystemUserAccount } from '../../types/erp';
@@ -105,7 +106,21 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
         onClick={(event) => event.stopPropagation()}
         className="absolute inset-x-0 top-full z-20 mt-2 w-full max-w-64 rounded-xl border border-slate-200 bg-white p-3.5 sm:p-3 text-left text-sm sm:text-xs font-normal normal-case leading-6 sm:leading-relaxed break-words tracking-normal text-slate-800 shadow-lg focus-visible:outline-none focus-visible:border-blue-600 focus-visible:ring-4 focus-visible:ring-blue-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus-visible:border-blue-300 dark:focus-visible:ring-blue-300/70 dark:focus-visible:ring-offset-slate-900"
       >
-        {description}
+        <div className="flex items-start gap-2">
+          <span className="min-w-0 flex-1">{description}</span>
+          <button
+            type="button"
+            aria-label={`Close ${typeof label === 'string' ? label : 'KPI'} help`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClose();
+              triggerRef.current?.focus();
+            }}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-800"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     )}
   </div>
