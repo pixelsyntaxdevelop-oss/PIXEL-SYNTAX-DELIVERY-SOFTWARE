@@ -68,6 +68,8 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
       <div
         id={`kpi-help-${id}`}
         role="note"
+        aria-live="polite"
+        aria-atomic="true"
         tabIndex={0}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
