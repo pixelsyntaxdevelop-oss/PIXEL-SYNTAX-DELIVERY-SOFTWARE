@@ -51,7 +51,7 @@ export const AlliedLogo: React.FC<AlliedLogoProps> = ({ className = '', size = '
     return (
       <div className={`flex items-center gap-2 select-none ${className}`}>
         <img
-          src={branding.logo_url}
+          src="/pixel-syntax-logo.webp"
           alt={branding.company_name || 'Enterprise Logo'}
           referrerPolicy="no-referrer"
           className={`${

@@ -73,9 +73,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
     isPlatformDomain: false,
     tenantId: 'company_pixel_syntax',
     companyName: initialCache.companyName || 'Pixel Syntax',
-    logoUrl: initialCache.mainLogoUrl || '/pixel-syntax-logo.png',
+    logoUrl: initialCache.mainLogoUrl || '/pixel-syntax-logo.webp',
     portalTitle: initialCache.portalTitle || initialCache.portalSubtitle || 'Pixel Syntax',
-    loginHeroUrl: initialCache.loginHeroUrl || '/pixel-syntax-logo.png',
+    loginHeroUrl: initialCache.loginHeroUrl || '/pixel-syntax-logo.webp',
     loginBgUrl: null,
     loginTagline: initialCache.loginTagline || 'Fleet & Logistics Management Portal',
     status: 'ACTIVE',
@@ -142,8 +142,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
             if (ctx.logoUrl) preloadImage(ctx.logoUrl);
 
             const isAllied = (ctx.tenantId || 'company_pixel_syntax') === 'company_pixel_syntax';
-            const nextHero = ctx.loginHeroUrl || (isAllied ? '/pixel-syntax-logo.png' : null);
-            const nextLogo = ctx.logoUrl || (isAllied ? '/pixel-syntax-logo.png' : null);
+            const nextHero = ctx.loginHeroUrl || (isAllied ? '/pixel-syntax-logo.webp' : null);
+            const nextLogo = ctx.logoUrl || (isAllied ? '/pixel-syntax-logo.webp' : null);
 
             // Persist safe metadata to localStorage client-side branding cache
             setCachedBranding(ctx.tenantId || 'company_pixel_syntax', {
@@ -154,7 +154,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
               portalSubtitle: ctx.portalTitle || 'Pixel Syntax',
               portalTitle: ctx.portalTitle || 'Pixel Syntax',
               loginTagline: ctx.loginTagline || 'Fleet & Logistics Management Portal',
-              faviconUrl: ctx.faviconUrl || '/favicon.png',
+              faviconUrl: ctx.faviconUrl || '/pixel-syntax-logo.webp',
             });
 
             const applyBrandingUpdate = () => {
@@ -401,14 +401,14 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
               <div className="flex justify-center mb-3">
                 <img
                   id="login-main-logo"
-                  src={branding.logoUrl || '/pixel-syntax-logo.png'}
+                  src={branding.logoUrl || '/pixel-syntax-logo.webp'}
                   alt=""
                   aria-label={branding.companyName || displayCompanyTitle}
                   referrerPolicy="no-referrer"
                   className="h-12 max-w-[200px] object-contain"
                   onError={() => {
-                    if (branding.logoUrl && branding.logoUrl !== '/pixel-syntax-logo.png') {
-                      setBranding((prev) => ({ ...prev, logoUrl: '/pixel-syntax-logo.png' }));
+                    if (branding.logoUrl && branding.logoUrl !== '/pixel-syntax-logo.webp') {
+                      setBranding((prev) => ({ ...prev, logoUrl: '/pixel-syntax-logo.webp' }));
                     } else {
                       setLogoImageError(true);
                     }

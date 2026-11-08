@@ -7,12 +7,12 @@
     <meta name="description" content="Explore the Pixel Syntax delivery management software demo for fleet operations, rider management, attendance, documents, and reporting." />
     <meta property="og:title" content="Pixel Syntax | Delivery Management Software Demo" />
     <meta property="og:description" content="Preview delivery operations, fleet management, attendance, and reporting features from Pixel Syntax." />
-    <link rel="icon" type="image/png" href="/pixel-syntax-logo.png" />
-    <link rel="alternate icon" type="image/png" href="/pixel-syntax-logo.png" />
-    <link rel="shortcut icon" href="/pixel-syntax-logo.png" />
-    <link rel="apple-touch-icon" href="/pixel-syntax-logo.png" />
-    <link rel="preload" as="image" href="/pixel-syntax-logo.png" type="image/jpeg" />
-    <link rel="preload" as="image" href="/pixel-syntax-logo.png" type="image/png" />
+    <link rel="icon" type="image/webp" href="/pixel-syntax-logo.webp" />
+    <link rel="alternate icon" type="image/webp" href="/pixel-syntax-logo.webp" />
+    <link rel="shortcut icon" href="/pixel-syntax-logo.webp" />
+    <link rel="apple-touch-icon" href="/pixel-syntax-logo.webp" />
+    <link rel="preload" as="image" href="/pixel-syntax-logo.webp" type="image/webp" />
+    <link rel="preload" as="image" href="/pixel-syntax-logo.webp" type="image/webp" />
     <meta name="theme-color" content="#059669" />
     <script>
       (function() {
@@ -76,11 +76,11 @@
           portalTitle: 'Pixel Syntax',
           portalSubtitle: 'Pixel Syntax',
           loginTagline: 'Fleet & Logistics Management Portal',
-          logoUrl: '/pixel-syntax-logo.png',
-          mainLogoUrl: '/pixel-syntax-logo.png',
-          headerLogoUrl: '/pixel-syntax-logo.png',
-          loginHeroUrl: '/pixel-syntax-logo.png',
-          faviconUrl: '/pixel-syntax-logo.png',
+          logoUrl: '/pixel-syntax-logo.webp',
+          mainLogoUrl: '/pixel-syntax-logo.webp',
+          headerLogoUrl: '/pixel-syntax-logo.webp',
+          loginHeroUrl: '/pixel-syntax-logo.webp',
+          faviconUrl: '/pixel-syntax-logo.webp',
           primaryColor: '#059669',
           isPlatformDomain: false
         };
@@ -94,10 +94,10 @@
             if (b && typeof b === 'object') {
               if (b.portalTitle === 'Operations Portal') b.portalTitle = 'Pixel Syntax';
               if (b.portalSubtitle === 'Operations Portal') b.portalSubtitle = 'Pixel Syntax';
-              if (!b.loginHeroUrl || b.loginHeroUrl.includes('placeholder')) b.loginHeroUrl = '/pixel-syntax-logo.png';
-              if (!b.mainLogoUrl || b.mainLogoUrl.includes('svg')) b.mainLogoUrl = '/pixel-syntax-logo.png';
-              if (!b.headerLogoUrl || b.headerLogoUrl.includes('svg')) b.headerLogoUrl = '/pixel-syntax-logo.png';
-              b.faviconUrl = '/pixel-syntax-logo.png';
+              b.loginHeroUrl = '/pixel-syntax-logo.webp';
+              b.mainLogoUrl = '/pixel-syntax-logo.webp';
+              b.headerLogoUrl = '/pixel-syntax-logo.webp';
+              b.faviconUrl = '/pixel-syntax-logo.webp';
               localStorage.setItem('apex_cached_login_branding_company_allied', JSON.stringify(b));
             }
           } else {
@@ -121,7 +121,7 @@
             }
 
             // Trigger immediate browser image preloads
-            var preloadUrls = [b.loginHeroUrl, b.headerLogoUrl, b.mainLogoUrl, '/pixel-syntax-logo.png'];
+            var preloadUrls = [b.loginHeroUrl, b.headerLogoUrl, b.mainLogoUrl, '/pixel-syntax-logo.webp'];
             for (var i = 0; i < preloadUrls.length; i++) {
               var u = preloadUrls[i];
               if (u) {

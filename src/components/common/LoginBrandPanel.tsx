@@ -15,7 +15,7 @@ export interface LoginBrandPanelProps {
  * Enforces identical container styling, aspect ratio, image fit, and responsive rules
  * across both the real /login page and the Platform Admin Live Login Screen Preview.
  *
- * LOGIN LEFT PANEL: uses /pixel-syntax-logo.png as the complete left panel image.
+ * LOGIN LEFT PANEL: uses /pixel-syntax-logo.webp as the complete left panel image.
  * Renders ONLY the approved hero artwork with object-fit: contain, preserving
  * the full image aspect ratio without crop, stretch, overlay text, or generated SVG.
  */
@@ -24,7 +24,7 @@ export const LoginBrandPanel: React.FC<LoginBrandPanelProps> = ({
   companyName = 'Pixel Syntax',
   className = '',
 }) => {
-  const effectiveHeroUrl = loginHeroUrl || '/pixel-syntax-logo.png';
+  const effectiveHeroUrl = loginHeroUrl === '/pixel-syntax-logo.webp' ? loginHeroUrl : '/pixel-syntax-logo.webp';
   const [heroImageError, setHeroImageError] = useState(false);
   const imgRef = React.useRef<HTMLImageElement | null>(null);
 
@@ -49,7 +49,7 @@ export const LoginBrandPanel: React.FC<LoginBrandPanelProps> = ({
       <img
         ref={imgRef}
         id="login-hero-artwork"
-        src={heroImageError ? '/pixel-syntax-logo.png' : effectiveHeroUrl}
+        src={heroImageError ? '/pixel-syntax-logo.webp' : effectiveHeroUrl}
         alt=""
         aria-label={companyName}
         referrerPolicy="no-referrer"

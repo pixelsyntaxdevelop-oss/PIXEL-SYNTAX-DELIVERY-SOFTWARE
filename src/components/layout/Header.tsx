@@ -305,7 +305,7 @@ export const Header: React.FC<HeaderProps> = ({
         {headerLogoUrl && !logoImageError ? (
           <div className="flex items-center select-none min-w-0 max-w-[96px] sm:max-w-none" id="header-tenant-logo-container">
             <img
-              src={headerLogoUrl}
+              src="/pixel-syntax-logo.webp"
               alt=""
               aria-label={activeTenantName || 'Pixel Syntax Delivery Software'}
               referrerPolicy="no-referrer"
@@ -323,7 +323,7 @@ export const Header: React.FC<HeaderProps> = ({
           /* Authoritative Allied Company Logo mark on first paint */
           <div className="flex items-center select-none min-w-0 max-w-[96px] sm:max-w-none" id="authoritative-allied-header-logo">
             <img
-              src="/allied-logo-original.png"
+              src="/pixel-syntax-logo.webp"
               alt="Pixel Syntax Delivery Software"
               className="max-h-[42px] w-auto max-w-full object-contain object-center transition-all drop-shadow-xs"
               style={{

@@ -4,6 +4,7 @@
  */
 
 const BRANDING_CACHE_KEY_PREFIX = 'apex_cached_login_branding_';
+const PIXEL_SYNTAX_LOGO = '/pixel-syntax-logo.webp';
 
 export interface SafeCachedBranding {
   tenantId?: string;
@@ -26,10 +27,10 @@ export const DEFAULT_ALLIED_PRODUCTION_BRANDING: SafeCachedBranding = {
   portalSubtitle: 'Pixel Syntax',
   portalTitle: 'Pixel Syntax',
   loginTagline: 'Fleet & Logistics Management Portal',
-  mainLogoUrl: '/pixel-syntax-logo.png',
-  headerLogoUrl: '/pixel-syntax-logo.png',
-  loginHeroUrl: '/pixel-syntax-logo.png',
-  faviconUrl: '/favicon.png',
+  mainLogoUrl: '/pixel-syntax-logo.webp',
+  headerLogoUrl: '/pixel-syntax-logo.webp',
+  loginHeroUrl: '/pixel-syntax-logo.webp',
+  faviconUrl: PIXEL_SYNTAX_LOGO,
   primaryColor: '#059669',
   secondaryColor: '#2563eb',
 };
@@ -61,10 +62,17 @@ export function getCachedBranding(tenantId: string = 'company_pixel_syntax'): Sa
       const raw = localStorage.getItem(`${BRANDING_CACHE_KEY_PREFIX}${tenantId}`);
       if (raw) {
         const parsed = JSON.parse(raw);
+        // Demo brand is fixed to the approved PS artwork, ignoring stale login imagery.
+        if (parsed && tenantId === 'company_pixel_syntax') {
+          parsed.mainLogoUrl = PIXEL_SYNTAX_LOGO;
+          parsed.headerLogoUrl = PIXEL_SYNTAX_LOGO;
+          parsed.loginHeroUrl = PIXEL_SYNTAX_LOGO;
+          parsed.faviconUrl = PIXEL_SYNTAX_LOGO;
+        }
         if (parsed && typeof parsed === 'object') {
-          const effectiveLogo = parsed.mainLogoUrl || parsed.logoUrl || (bootstrap?.mainLogoUrl ?? (tenantId === 'company_pixel_syntax' ? '/pixel-syntax-logo.png' : null));
-          const effectiveHero = parsed.loginHeroUrl || (bootstrap?.loginHeroUrl ?? (tenantId === 'company_pixel_syntax' ? '/pixel-syntax-logo.png' : null));
-          const effectiveHeader = parsed.headerLogoUrl || effectiveLogo || (bootstrap?.headerLogoUrl ?? (tenantId === 'company_pixel_syntax' ? '/pixel-syntax-logo.png' : null));
+          const effectiveLogo = parsed.mainLogoUrl || parsed.logoUrl || (bootstrap?.mainLogoUrl ?? (tenantId === 'company_pixel_syntax' ? '/pixel-syntax-logo.webp' : null));
+          const effectiveHero = parsed.loginHeroUrl || (bootstrap?.loginHeroUrl ?? (tenantId === 'company_pixel_syntax' ? '/pixel-syntax-logo.webp' : null));
+          const effectiveHeader = parsed.headerLogoUrl || effectiveLogo || (bootstrap?.headerLogoUrl ?? (tenantId === 'company_pixel_syntax' ? '/pixel-syntax-logo.webp' : null));
 
           // Trigger background preload for cached image URLs immediately
           if (effectiveHero) preloadImage(effectiveHero);
@@ -80,7 +88,7 @@ export function getCachedBranding(tenantId: string = 'company_pixel_syntax'): Sa
             portalSubtitle: parsed.portalSubtitle || parsed.portalTitle || (bootstrap?.portalSubtitle ?? (tenantId === 'company_pixel_syntax' ? 'Pixel Syntax' : 'Operations Portal')),
             portalTitle: parsed.portalTitle || parsed.portalSubtitle || (bootstrap?.portalTitle ?? (tenantId === 'company_pixel_syntax' ? 'Pixel Syntax' : 'Operations Portal')),
             loginTagline: parsed.loginTagline || (bootstrap?.loginTagline ?? 'Fleet & Logistics Management Portal'),
-            faviconUrl: parsed.faviconUrl || (bootstrap?.faviconUrl ?? '/favicon.png'),
+            faviconUrl: parsed.faviconUrl || (bootstrap?.faviconUrl ?? PIXEL_SYNTAX_LOGO),
             primaryColor: parsed.primaryColor || (bootstrap?.primaryColor ?? '#059669'),
             secondaryColor: parsed.secondaryColor || '#2563eb',
             updatedAt: parsed.updatedAt,
@@ -92,8 +100,8 @@ export function getCachedBranding(tenantId: string = 'company_pixel_syntax'): Sa
     }
 
     if (bootstrap && tenantId === 'company_pixel_syntax') {
-      const bHero = bootstrap.loginHeroUrl || '/pixel-syntax-logo.png';
-      const bLogo = bootstrap.mainLogoUrl || bootstrap.logoUrl || '/pixel-syntax-logo.png';
+      const bHero = bootstrap.loginHeroUrl || '/pixel-syntax-logo.webp';
+      const bLogo = bootstrap.mainLogoUrl || bootstrap.logoUrl || '/pixel-syntax-logo.webp';
       const bHeader = bootstrap.headerLogoUrl || bLogo;
 
       preloadImage(bHero);
@@ -109,7 +117,7 @@ export function getCachedBranding(tenantId: string = 'company_pixel_syntax'): Sa
         portalSubtitle: bootstrap.portalSubtitle || bootstrap.portalTitle || 'Pixel Syntax',
         portalTitle: bootstrap.portalTitle || bootstrap.portalSubtitle || 'Pixel Syntax',
         loginTagline: bootstrap.loginTagline || 'Fleet & Logistics Management Portal',
-        faviconUrl: bootstrap.faviconUrl || '/favicon.png',
+        faviconUrl: bootstrap.faviconUrl || PIXEL_SYNTAX_LOGO,
         primaryColor: bootstrap.primaryColor || '#059669',
         secondaryColor: '#2563eb',
       };
@@ -128,7 +136,7 @@ export function getCachedBranding(tenantId: string = 'company_pixel_syntax'): Sa
         portalSubtitle: 'Operations Portal',
         portalTitle: 'Operations Portal',
         loginTagline: 'Fleet & Logistics Management Portal',
-        faviconUrl: '/favicon.png',
+        faviconUrl: PIXEL_SYNTAX_LOGO,
         primaryColor: '#059669',
         secondaryColor: '#2563eb',
       };
@@ -165,11 +173,17 @@ export function setCachedBranding(
       portalSubtitle: branding.portalSubtitle || branding.portalTitle || existing.portalSubtitle || 'Operations Portal',
       portalTitle: branding.portalTitle || branding.portalSubtitle || existing.portalTitle || 'Operations Portal',
       loginTagline: branding.loginTagline || existing.loginTagline || 'Fleet & Logistics Management Portal',
-      faviconUrl: branding.faviconUrl || existing.faviconUrl || '/favicon.png',
+      faviconUrl: branding.faviconUrl || existing.faviconUrl || PIXEL_SYNTAX_LOGO,
       primaryColor: branding.primaryColor || existing.primaryColor || '#059669',
       secondaryColor: branding.secondaryColor || existing.secondaryColor || '#2563eb',
       updatedAt: Date.now(),
     };
+    if (tenantId === 'company_pixel_syntax') {
+      safePayload.mainLogoUrl = PIXEL_SYNTAX_LOGO;
+      safePayload.headerLogoUrl = PIXEL_SYNTAX_LOGO;
+      safePayload.loginHeroUrl = PIXEL_SYNTAX_LOGO;
+      safePayload.faviconUrl = PIXEL_SYNTAX_LOGO;
+    }
     localStorage.setItem(`${BRANDING_CACHE_KEY_PREFIX}${tenantId}`, JSON.stringify(safePayload));
 
     // Update bootstrap global cache
@@ -223,20 +237,27 @@ export async function fetchAuthoritativeTenantContext(
         throw new Error(`Tenant context fetch returned HTTP ${res.status}`);
       }
       const data = await res.json();
+      if (tenantId === 'company_pixel_syntax' && data) {
+        data.logoUrl = PIXEL_SYNTAX_LOGO;
+        data.mainLogoUrl = PIXEL_SYNTAX_LOGO;
+        data.headerLogoUrl = PIXEL_SYNTAX_LOGO;
+        data.loginHeroUrl = PIXEL_SYNTAX_LOGO;
+        data.faviconUrl = PIXEL_SYNTAX_LOGO;
+      }
       memoryContextCache.set(tenantId, { data, timestamp: Date.now() });
 
       // Synchronize client cache if valid data received
       if (data) {
         const isAllied = tenantId === 'company_pixel_syntax';
         setCachedBranding(tenantId, {
-          mainLogoUrl: data.logoUrl || data.mainLogoUrl || (isAllied ? '/pixel-syntax-logo.png' : null),
-          headerLogoUrl: data.headerLogoUrl || data.logoUrl || (isAllied ? '/pixel-syntax-logo.png' : null),
-          loginHeroUrl: data.loginHeroUrl || (isAllied ? '/pixel-syntax-logo.png' : null),
+          mainLogoUrl: data.logoUrl || data.mainLogoUrl || (isAllied ? '/pixel-syntax-logo.webp' : null),
+          headerLogoUrl: data.headerLogoUrl || data.logoUrl || (isAllied ? '/pixel-syntax-logo.webp' : null),
+          loginHeroUrl: data.loginHeroUrl || (isAllied ? '/pixel-syntax-logo.webp' : null),
           companyName: data.companyName || (isAllied ? 'Pixel Syntax' : data.companyName),
           portalTitle: data.portalTitle || (isAllied ? 'Pixel Syntax' : data.portalTitle),
           portalSubtitle: data.portalTitle || (isAllied ? 'Pixel Syntax' : data.portalTitle),
           loginTagline: data.loginTagline || 'Fleet & Logistics Management Portal',
-          faviconUrl: data.faviconUrl || '/favicon.png',
+          faviconUrl: data.faviconUrl || PIXEL_SYNTAX_LOGO,
           primaryColor: data.primaryColor,
           secondaryColor: data.secondaryColor,
         });
