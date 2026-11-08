@@ -94,7 +94,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
         role="note"
         aria-live="polite"
         aria-atomic="true"
-        tabIndex={0}
+        tabIndex={-1}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.stopPropagation();
