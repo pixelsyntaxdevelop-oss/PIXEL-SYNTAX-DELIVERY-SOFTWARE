@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Users,
   Briefcase,
@@ -39,19 +39,24 @@ interface KpiHelpLabelProps {
   onClose: () => void;
 }
 
-const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isOpen, onToggle, onClose }) => (
+const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isOpen, onToggle, onClose }) => {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  return (
   <div className="relative flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
     <span className="min-w-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</span>
     <button
+      ref={triggerRef}
       type="button"
       aria-label={`About ${typeof label === 'string' ? label : 'this KPI'}`}
       aria-expanded={isOpen}
       aria-controls={`kpi-help-${id}`}
       onClick={(event) => { event.stopPropagation(); onToggle(); }}
       onKeyDown={(event) => {
-        if (event.key === 'Escape') {
+        if (event.key === 'Escape' && isOpen) {
           event.stopPropagation();
           onClose();
+          triggerRef.current?.focus();
         }
       }}
       className="inline-flex min-h-11 min-w-11 sm:min-h-9 sm:min-w-9 shrink-0 touch-manipulation items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-800 focus-visible:ring-4 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:bg-slate-800 dark:focus-visible:text-blue-200 dark:focus-visible:ring-blue-300/80 dark:focus-visible:ring-offset-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-300"
@@ -62,6 +67,14 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
       <div
         id={`kpi-help-${id}`}
         role="note"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.stopPropagation();
+            onClose();
+            triggerRef.current?.focus();
+          }
+        }}
         onClick={(event) => event.stopPropagation()}
         className="absolute inset-x-0 top-full z-20 mt-2 w-full max-w-64 rounded-xl border border-slate-200 bg-white p-3.5 sm:p-3 text-left text-sm sm:text-xs font-normal normal-case leading-6 sm:leading-relaxed break-words tracking-normal text-slate-800 shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
       >
@@ -69,7 +82,8 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
       </div>
     )}
   </div>
-);
+  );
+};
 
 interface OperationsHomeDashboardProps {
   onNavigateModule: (module: NavigationModule) => void;
