@@ -188,7 +188,7 @@ export const translations = {
     kpiPayrollStatusDraft: "مسودة",
     kpiPayrollStatusProcessed: "تمت المعالجة",
     kpiPayrollStatusPaid: "مدفوع",
-    kpiFinesCountUnit: "مخالفة مرورية",
+    kpiFinesCountUnit: "مخالفات",
     confirm: "تأكيد الإجراء",
     
     // Common Status Labels
