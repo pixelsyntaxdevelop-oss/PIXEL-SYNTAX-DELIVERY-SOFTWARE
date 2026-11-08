@@ -62,6 +62,12 @@ export const translations = {
     kpiHelpPassportsDescription: "Passports held by the company or rider; breakdown includes expiring passports.",
     kpiHelpPayrollDescription: "Payroll total for the displayed period, with its current status.",
     kpiHelpFinesDescription: "Total recorded traffic fine amount in AED; see unresolved fines below.",
+    kpiHeadingEmployees: "Delivery Employees",
+    kpiHeadingFleet: "Fleet & Bikes",
+    kpiHeadingSims: "SIM Inventory",
+    kpiHeadingPassports: "Passport Custody",
+    kpiHeadingPayroll: "Monthly Payroll",
+    kpiHeadingFines: "Traffic Fines",
     confirm: "Confirm Action",
     
     // Common Status Labels
@@ -137,6 +143,12 @@ export const translations = {
     kpiHelpPassportsDescription: "جوازات السفر الموجودة لدى الشركة أو المندوب؛ يشمل التفصيل الجوازات التي تقترب صلاحيتها من الانتهاء.",
     kpiHelpPayrollDescription: "إجمالي الرواتب للفترة المعروضة مع حالتها الحالية.",
     kpiHelpFinesDescription: "إجمالي قيمة المخالفات المرورية المسجلة بالدرهم الإماراتي؛ راجع المخالفات غير المحسومة أدناه.",
+    kpiHeadingEmployees: "موظفو التوصيل",
+    kpiHeadingFleet: "الأسطول والدراجات",
+    kpiHeadingSims: "مخزون شرائح الاتصال",
+    kpiHeadingPassports: "حفظ جوازات السفر",
+    kpiHeadingPayroll: "الرواتب الشهرية",
+    kpiHeadingFines: "المخالفات المرورية",
     confirm: "تأكيد الإجراء",
     
     // Common Status Labels
