@@ -88,6 +88,8 @@ export const translations = {
     kpiPayrollStatusProcessed: "Processed",
     kpiPayrollStatusPaid: "Paid",
     kpiFinesCountUnit: "fines",
+    kpiFinesCountSingular: "fine",
+    kpiFinesCountDual: "fines",
     confirm: "Confirm Action",
     
     // Common Status Labels
@@ -189,6 +191,8 @@ export const translations = {
     kpiPayrollStatusProcessed: "تمت المعالجة",
     kpiPayrollStatusPaid: "مدفوع",
     kpiFinesCountUnit: "مخالفات",
+    kpiFinesCountSingular: "مخالفة",
+    kpiFinesCountDual: "مخالفتان",
     confirm: "تأكيد الإجراء",
     
     // Common Status Labels
