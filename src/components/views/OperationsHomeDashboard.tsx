@@ -41,9 +41,23 @@ interface KpiHelpLabelProps {
 
 const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isOpen, onToggle, onClose }) => {
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const helpContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const dismissOnOutsidePointer = (event: PointerEvent) => {
+      if (event.target instanceof Node && !helpContainerRef.current?.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("pointerdown", dismissOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", dismissOnOutsidePointer);
+  }, [isOpen, onClose]);
 
   return (
-  <div className="relative flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+  <div ref={helpContainerRef} className="relative flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
     <span className="min-w-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</span>
     <button
       ref={triggerRef}
