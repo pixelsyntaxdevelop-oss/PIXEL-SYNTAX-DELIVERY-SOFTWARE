@@ -32,6 +32,20 @@ import { apiClient } from '../../services/apiClient';
 import { resolveCanonicalStatus } from '../../utils/canonicalStatus';
 import { translations, LanguageMode } from '../../data/translations';
 
+// Localize known payroll month labels for display without changing API period values.
+const formatKpiPayrollMonth = (period: string, lang: LanguageMode): string => {
+  if (lang !== 'AR') return period;
+  if (period.trim().toLowerCase() === 'no active period') return translations[lang].kpiPayrollNoActivePeriod;
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const named = /^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})$/i.exec(period.trim());
+  const numeric = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(period.trim());
+  const monthIndex = named ? monthNames.findIndex((month) => month.toLowerCase() === named[1].toLowerCase()) : numeric ? Number(numeric[2]) - 1 : -1;
+  if (monthIndex < 0) return period;
+  const year = named ? Number(named[2]) : Number(numeric![1]);
+  return new Intl.DateTimeFormat('ar-AE', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, monthIndex, 1)));
+};
+
 // Presentation-only count labels; the underlying fine totals are unchanged.
 const formatKpiFineCount = (count: number, lang: LanguageMode): string => {
   if (lang !== 'AR') return `${count} ${translations[lang].kpiFinesCountUnit}`;
@@ -906,7 +920,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-emerald-500 transition-all cursor-pointer group"
           >
             <div className="flex min-w-0 items-start justify-between gap-2 mb-3">
-              <KpiHelpLabel lang={lang} id="payroll" label={`${translations[lang].kpiHeadingPayroll} (${metrics.payroll.currentMonth})`} description={translations[lang].kpiHelpPayrollDescription} isOpen={openKpiHelp === 'payroll'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'payroll' ? null : 'payroll')} onClose={() => setOpenKpiHelp(null)} />
+              <KpiHelpLabel lang={lang} id="payroll" label={`${translations[lang].kpiHeadingPayroll} (${formatKpiPayrollMonth(metrics.payroll.currentMonth, lang)})`} description={translations[lang].kpiHelpPayrollDescription} isOpen={openKpiHelp === 'payroll'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'payroll' ? null : 'payroll')} onClose={() => setOpenKpiHelp(null)} />
               <div className="shrink-0 p-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                 <DollarSign className="w-4 h-4" />
               </div>
