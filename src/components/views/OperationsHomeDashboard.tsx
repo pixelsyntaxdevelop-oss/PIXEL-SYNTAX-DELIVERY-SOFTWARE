@@ -124,7 +124,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, lang, label, descriptio
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
-          <span id={`kpi-help-close-hint-${id}`} className="sr-only">Closes this help note and returns focus to its information button.</span>
+          <span id={`kpi-help-close-hint-${id}`} className="sr-only">{translations[lang].closeKpiHelpHint}</span>
         </div>
       </div>
     )}

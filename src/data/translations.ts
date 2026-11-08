@@ -54,6 +54,7 @@ export const translations = {
     cancel: "Cancel",
     closeKpiHelp: "Close help",
     closeKpiHelpFor: "Close help for {label}",
+    closeKpiHelpHint: "Closes this help note and returns focus to its information button.",
     confirm: "Confirm Action",
     
     // Common Status Labels
@@ -121,6 +122,7 @@ export const translations = {
     cancel: "إلغاء",
     closeKpiHelp: "إغلاق المساعدة",
     closeKpiHelpFor: "إغلاق المساعدة لـ {label}",
+    closeKpiHelpHint: "يغلق ملاحظة المساعدة هذه ويعيد التركيز إلى زر المعلومات الخاص بها.",
     confirm: "تأكيد الإجراء",
     
     // Common Status Labels
