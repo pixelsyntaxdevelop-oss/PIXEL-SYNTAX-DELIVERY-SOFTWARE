@@ -733,15 +733,15 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             </div>
             <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-x-3 gap-y-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Active</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownActive}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-emerald-600 dark:text-emerald-400">{metrics.employees.active}</span>
               </div>
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Available</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownAvailable}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.employees.available}</span>
               </div>
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">On Leave</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownOnLeave}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-amber-600 dark:text-amber-400">{metrics.employees.onLeave}</span>
               </div>
             </div>
@@ -775,15 +775,15 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             </div>
             <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-x-3 gap-y-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Assigned</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownAssigned}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-emerald-600 dark:text-emerald-400">{metrics.fleet.assigned}</span>
               </div>
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Available</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownAvailable}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.fleet.available}</span>
               </div>
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Garage</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownGarage}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-amber-600 dark:text-amber-400">{metrics.fleet.garage}</span>
               </div>
             </div>
@@ -817,15 +817,15 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             </div>
             <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-x-3 gap-y-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Assigned</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownAssigned}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-emerald-600 dark:text-emerald-400">{metrics.sims.assigned}</span>
               </div>
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Available</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownAvailable}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.sims.available}</span>
               </div>
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Lost/Faulty</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownLostFaulty}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-rose-600 dark:text-rose-400">{metrics.sims.lost}</span>
               </div>
             </div>
@@ -859,15 +859,15 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             </div>
             <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-x-3 gap-y-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">In Safe Box</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownInSafeBox}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-emerald-600 dark:text-emerald-400">{metrics.passports.withCompany}</span>
               </div>
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">With Rider</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownWithRider}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.passports.withRider}</span>
               </div>
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Expiring</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownExpiring}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-amber-600 dark:text-amber-400">{metrics.passports.expiring}</span>
               </div>
             </div>
@@ -935,11 +935,11 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Unresolved</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownUnresolved}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-rose-600 dark:text-rose-400">{metrics.fines.newFines} fines</span>
               </div>
               <div>
-                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Payroll-Linked</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownPayrollLinked}</span>
                 <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.fines.payrollLinked} fines</span>
               </div>
             </div>
