@@ -347,7 +347,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold'
                           : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                       }`}
-                      title={collapsed ? item.label : undefined}
+                      title={item.label}
                     >
                       {/* Left Arrow Icon (▸ when collapsed, ▾ when expanded) */}
                       {hasSubItems && !collapsed && (
@@ -361,7 +361,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                       {/* Parent Label */}
                       {!collapsed && (
-                        <span className="truncate text-left flex-1 font-medium text-[12px]">
+                        <span className="min-w-0 flex-1 text-left font-medium text-[12px] leading-snug whitespace-normal break-words lg:truncate">
                           {item.label}
                         </span>
                       )}
@@ -377,7 +377,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             <button
                               key={sub.id}
                               onClick={() => handleSelectModule(sub.id as NavigationModule)}
-                              className={`w-full text-left py-2.5 lg:py-1 px-2.5 min-h-[44px] lg:min-h-0 rounded text-[11px] transition-colors block truncate ${
+                              title={sub.label}
+                              className={`w-full text-left py-2.5 lg:py-1 px-2.5 min-h-[44px] lg:min-h-0 rounded text-[11px] leading-snug transition-colors block whitespace-normal break-words lg:truncate ${
                                 isSubActive
                                   ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-semibold'
                                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/40'
