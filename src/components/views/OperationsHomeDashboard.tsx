@@ -932,7 +932,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <DollarSign className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
+            <div role="text" aria-label={`${translations[lang].kpiHeadingPayroll}: ${formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {translations[lang].kpiCurrencyAed} {formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px]">
@@ -966,7 +966,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <AlertTriangle className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
+            <div role="text" aria-label={`${translations[lang].kpiHeadingFines}: ${formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {translations[lang].kpiCurrencyAed} {formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)}
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
