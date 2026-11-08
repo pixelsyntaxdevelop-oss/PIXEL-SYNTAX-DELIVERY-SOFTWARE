@@ -79,6 +79,8 @@ export const translations = {
     kpiBreakdownExpiring: "Expiring",
     kpiBreakdownUnresolved: "Unresolved",
     kpiBreakdownPayrollLinked: "Payroll-Linked",
+    kpiPayrollStatusLabel: "Status",
+    kpiPayrollSplitCalculated: "Split-Calculated",
     confirm: "Confirm Action",
     
     // Common Status Labels
@@ -171,6 +173,8 @@ export const translations = {
     kpiBreakdownExpiring: "قارب على الانتهاء",
     kpiBreakdownUnresolved: "غير محسوم",
     kpiBreakdownPayrollLinked: "مرتبط بالرواتب",
+    kpiPayrollStatusLabel: "الحالة",
+    kpiPayrollSplitCalculated: "محسوب بالتقسيم",
     confirm: "تأكيد الإجراء",
     
     // Common Status Labels
