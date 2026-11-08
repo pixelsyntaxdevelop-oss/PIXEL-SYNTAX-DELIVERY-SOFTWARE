@@ -38,8 +38,8 @@ const formatKpiPayrollMonth = (period: string, lang: LanguageMode): string => {
   if (period.trim().toLowerCase() === 'no active period') return translations[lang].kpiPayrollNoActivePeriod;
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const named = /^(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{4})$/i.exec(period.trim());
-  const numeric = /^(\\d{4})-(0[1-9]|1[0-2])$/.exec(period.trim());
+  const named = /^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})$/i.exec(period.trim());
+  const numeric = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(period.trim());
   const monthIndex = named ? monthNames.findIndex((month) => month.toLowerCase() === named[1].toLowerCase()) : numeric ? Number(numeric[2]) - 1 : -1;
   if (monthIndex < 0) return period;
   const year = named ? Number(named[2]) : Number(numeric![1]);
