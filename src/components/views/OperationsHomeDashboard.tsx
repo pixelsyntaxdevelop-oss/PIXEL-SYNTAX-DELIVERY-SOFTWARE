@@ -579,7 +579,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div>
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex flex-wrap items-center gap-2">
                 <span>Attention Required & Operational Exceptions</span>
-                <span className="px-2 py-0.5 bg-amber-500 text-slate-950 rounded-full text-[10px] font-extrabold">
+                <span className="inline-flex max-w-full items-center rounded-full px-2.5 py-1 sm:px-2 sm:py-0.5 bg-amber-500 text-slate-950 text-xs sm:text-[10px] leading-snug font-extrabold whitespace-normal">
                   {exceptions.length} Action Items
                 </span>
               </h2>
@@ -838,11 +838,11 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               AED {metrics.payroll.totalAmount.toLocaleString()}
             </div>
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px]">
+              <span className="inline-flex max-w-full items-center rounded-full px-3 py-1.5 sm:px-2 sm:py-0.5 text-xs sm:text-[10px] leading-snug font-bold break-words bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                 Status: {metrics.payroll.status}
               </span>
-              <span className="text-slate-500 font-medium">Split-Calculated</span>
+              <span className="text-slate-600 dark:text-slate-300 font-medium leading-snug break-words">Split-Calculated</span>
             </div>
           </div>
         )}
