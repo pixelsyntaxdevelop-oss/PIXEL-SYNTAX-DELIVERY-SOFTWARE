@@ -473,16 +473,22 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
             <span>+ Traffic Fine</span>
           </button>
-          <button
-            onClick={loadDashboardData}
-            disabled={refreshing}
-            className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-200 dark:border-slate-700"
-            title={refreshing ? 'Refreshing dashboard data' : 'Refresh dashboard data'}
-            aria-label={refreshing ? 'Refreshing dashboard data' : 'Refresh dashboard data'}
-            aria-busy={refreshing}
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-blue-600' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <span role="status" aria-live="polite" aria-atomic="true" className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              {refreshing ? 'Refreshing dashboard…' : loadError ? 'Refresh failed' : hasLoadedSuccessfully ? 'Dashboard updated' : ''}
+            </span>
+            <button
+              type="button"
+              onClick={loadDashboardData}
+              disabled={refreshing}
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 p-2 text-slate-600 transition-colors hover:bg-slate-200 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              title={refreshing ? 'Refreshing dashboard data' : 'Refresh dashboard data'}
+              aria-label={refreshing ? 'Refreshing dashboard data' : 'Refresh dashboard data'}
+              aria-busy={refreshing}
+            >
+              <RefreshCw aria-hidden="true" className={`h-4 w-4 ${refreshing ? 'animate-spin text-blue-600' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
