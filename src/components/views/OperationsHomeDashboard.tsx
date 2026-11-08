@@ -63,7 +63,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
         id={`kpi-help-${id}`}
         role="note"
         onClick={(event) => event.stopPropagation()}
-        className="absolute left-0 top-full z-20 mt-1 w-64 max-w-[80vw] rounded-xl border border-slate-200 bg-white p-3 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-slate-700 shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+        className="absolute inset-x-0 top-full z-20 mt-2 w-full max-w-64 rounded-xl border border-slate-200 bg-white p-3 text-left text-xs font-normal normal-case leading-relaxed break-words tracking-normal text-slate-700 shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
       >
         {description}
       </div>
