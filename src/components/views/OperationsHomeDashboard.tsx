@@ -77,7 +77,6 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   const loadDashboardData = async () => {
     try {
       setRefreshing(true);
-      setLoadError(false);
 
       // Fetch Consolidated Stats
       let statsData: any = null;
@@ -337,6 +336,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
 
       setExceptions(computedExceptions);
       setHasLoadedSuccessfully(true);
+      setLoadError(false);
     } catch (err) {
       setLoadError(true);
       console.error('Failed to load dashboard operational data:', err);
