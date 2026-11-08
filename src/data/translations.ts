@@ -56,6 +56,12 @@ export const translations = {
     aboutKpiHelp: "About {label}",
     closeKpiHelpFor: "Close help for {label}",
     closeKpiHelpHint: "Closes this help note and returns focus to its information button.",
+    kpiHelpEmployeesDescription: "Total employees recorded; breakdown shows active, available and on-leave employees.",
+    kpiHelpFleetDescription: "Total fleet vehicles; breakdown shows assigned, available and garage vehicles.",
+    kpiHelpSimsDescription: "Total SIM cards; breakdown shows assigned, available and lost or faulty SIMs.",
+    kpiHelpPassportsDescription: "Passports held by the company or rider; breakdown includes expiring passports.",
+    kpiHelpPayrollDescription: "Payroll total for the displayed period, with its current status.",
+    kpiHelpFinesDescription: "Total recorded traffic fine amount in AED; see unresolved fines below.",
     confirm: "Confirm Action",
     
     // Common Status Labels
@@ -125,6 +131,12 @@ export const translations = {
     aboutKpiHelp: "معلومات حول {label}",
     closeKpiHelpFor: "إغلاق المساعدة لـ {label}",
     closeKpiHelpHint: "يغلق ملاحظة المساعدة هذه ويعيد التركيز إلى زر المعلومات الخاص بها.",
+    kpiHelpEmployeesDescription: "إجمالي الموظفين المسجلين؛ يعرض التفصيل الموظفين النشطين والمتاحين وفي إجازة.",
+    kpiHelpFleetDescription: "إجمالي مركبات الأسطول؛ يعرض التفصيل المركبات المخصصة والمتاحة والموجودة في الورشة.",
+    kpiHelpSimsDescription: "إجمالي شرائح الاتصال؛ يعرض التفصيل الشرائح المخصصة والمتاحة والمفقودة أو المعطلة.",
+    kpiHelpPassportsDescription: "جوازات السفر الموجودة لدى الشركة أو المندوب؛ يشمل التفصيل الجوازات التي تقترب صلاحيتها من الانتهاء.",
+    kpiHelpPayrollDescription: "إجمالي الرواتب للفترة المعروضة مع حالتها الحالية.",
+    kpiHelpFinesDescription: "إجمالي قيمة المخالفات المرورية المسجلة بالدرهم الإماراتي؛ راجع المخالفات غير المحسومة أدناه.",
     confirm: "تأكيد الإجراء",
     
     // Common Status Labels
