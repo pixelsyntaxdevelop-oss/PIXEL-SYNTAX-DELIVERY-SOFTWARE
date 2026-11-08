@@ -659,7 +659,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 onNavigateModule('riders_drivers');
               }
             }}
-            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-blue-500 transition-all cursor-pointer group"
+            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-blue-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
               <KpiHelpLabel id="employees" label={"Delivery Employees"} description="Total employees recorded; breakdown shows active, available and on-leave employees." isOpen={openKpiHelp === 'employees'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'employees' ? null : 'employees')} onClose={() => setOpenKpiHelp(null)} />
@@ -701,7 +701,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 onNavigateModule('vehicles_fleet');
               }
             }}
-            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-amber-500 transition-all cursor-pointer group"
+            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-amber-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
               <KpiHelpLabel id="fleet" label={"Fleet & Bikes"} description="Total fleet vehicles; breakdown shows assigned, available and garage vehicles." isOpen={openKpiHelp === 'fleet'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'fleet' ? null : 'fleet')} onClose={() => setOpenKpiHelp(null)} />
@@ -743,7 +743,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 onNavigateModule('sim_management');
               }
             }}
-            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-sky-500 transition-all cursor-pointer group"
+            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-sky-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
               <KpiHelpLabel id="sims" label={"SIM Inventory"} description="Total SIM cards; breakdown shows assigned, available and lost or faulty SIMs." isOpen={openKpiHelp === 'sims'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'sims' ? null : 'sims')} onClose={() => setOpenKpiHelp(null)} />
@@ -785,7 +785,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 onNavigateModule('office_forms_passport');
               }
             }}
-            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-purple-500 transition-all cursor-pointer group"
+            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-purple-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
               <KpiHelpLabel id="passports" label={"Passport Custody"} description="Passports held by the company or rider; breakdown includes expiring passports." isOpen={openKpiHelp === 'passports'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'passports' ? null : 'passports')} onClose={() => setOpenKpiHelp(null)} />
@@ -827,7 +827,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 onNavigateModule('hr_payroll');
               }
             }}
-            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-emerald-500 transition-all cursor-pointer group"
+            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-emerald-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
               <KpiHelpLabel id="payroll" label={`Monthly Payroll (${metrics.payroll.currentMonth})`} description="Payroll total for the displayed period, with its current status." isOpen={openKpiHelp === 'payroll'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'payroll' ? null : 'payroll')} onClose={() => setOpenKpiHelp(null)} />
@@ -861,7 +861,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 onNavigateModule('traffic_fines_mgmt');
               }
             }}
-            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-rose-500 transition-all cursor-pointer group"
+            className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-rose-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
               <KpiHelpLabel id="fines" label={"Traffic Fines"} description="Total recorded traffic fine amount in AED; see unresolved fines below." isOpen={openKpiHelp === 'fines'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'fines' ? null : 'fines')} onClose={() => setOpenKpiHelp(null)} />
