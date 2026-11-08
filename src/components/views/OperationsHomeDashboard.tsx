@@ -901,9 +901,9 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px]">
               <span className="inline-flex max-w-full items-center rounded-full px-3 py-1.5 sm:px-2 sm:py-0.5 text-xs sm:text-[10px] leading-snug font-bold break-words bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                Status: {metrics.payroll.status}
+                {translations[lang].kpiPayrollStatusLabel}: {metrics.payroll.status}
               </span>
-              <span className="text-slate-600 dark:text-slate-300 font-medium leading-snug break-words">Split-Calculated</span>
+              <span className="text-slate-600 dark:text-slate-300 font-medium leading-snug break-words">{translations[lang].kpiPayrollSplitCalculated}</span>
             </div>
           </div>
         )}
