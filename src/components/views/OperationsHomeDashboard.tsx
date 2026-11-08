@@ -527,7 +527,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
             <span>+ Traffic Fine</span>
           </button>
-          <div className="flex min-w-0 items-start sm:items-center gap-2">
+          <div className="flex items-center gap-2">
             <span role="status" aria-live="polite" aria-atomic="true" className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
               {refreshing ? 'Refreshing dashboard…' : loadError ? 'Refresh failed' : hasLoadedSuccessfully ? 'Dashboard updated' : ''}
             </span>
@@ -572,7 +572,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
       {/* Section 1: ATTENTION REQUIRED / EXCEPTION CENTER (Prominent & Actionable) */}
       <div className="bg-amber-500/10 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 rounded-2xl p-3 sm:p-5 shadow-xs">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-start sm:items-center gap-2">
             <div className="w-7 h-7 bg-amber-500 text-slate-950 rounded-lg flex items-center justify-center font-black">
               <AlertTriangle className="w-4 h-4" />
             </div>
