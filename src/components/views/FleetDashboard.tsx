@@ -369,9 +369,22 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
             </div>
 
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 relative overflow-hidden">
-              <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full text-[10px] font-mono">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Live GPS Signal
-              </div>
+              {riders.length > 0 ? (
+                <div className="flex items-center justify-end gap-1.5 text-emerald-400 text-[10px] font-mono mb-3">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" aria-hidden="true"></span>
+                  Live GPS Signal
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 py-8 text-center" role="status">
+                  <MapPin className="w-7 h-7 text-slate-500" aria-hidden="true" />
+                  <p className="text-xs font-semibold text-slate-200">
+                    {lang === 'EN' ? 'No rider locations available' : 'لا تتوفر مواقع للمندوبين'}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    {lang === 'EN' ? 'Rider locations will appear here when GPS data is available.' : 'ستظهر مواقع المندوبين هنا عند توفر بيانات GPS.'}
+                  </p>
+                </div>
+              )}
 
               {riders.map((r) => (
                 <div key={r.id} className="flex items-center justify-between text-xs border-b border-slate-800/80 pb-2 last:border-0 last:pb-0">
