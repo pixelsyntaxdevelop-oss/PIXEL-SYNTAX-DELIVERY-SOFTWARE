@@ -600,7 +600,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-blue-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span title="Total employees recorded; breakdown shows active, available and on-leave employees." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
                 Delivery Employees
               </span>
               <div className="p-2 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -634,7 +634,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-amber-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span title="Total fleet vehicles; breakdown shows assigned, available and garage vehicles." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
                 Fleet & Bikes
               </span>
               <div className="p-2 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-xl group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
@@ -668,7 +668,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-sky-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span title="Total SIM cards; breakdown shows assigned, available and lost or faulty SIMs." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
                 SIM Inventory
               </span>
               <div className="p-2 bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 rounded-xl group-hover:bg-sky-600 group-hover:text-white transition-colors">
@@ -702,7 +702,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-purple-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span title="Passports held by the company or rider; breakdown includes expiring passports." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
                 Passport Custody
               </span>
               <div className="p-2 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 rounded-xl group-hover:bg-purple-600 group-hover:text-white transition-colors">
@@ -736,7 +736,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-emerald-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span title="Payroll total for the displayed period, with its current status." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
                 Monthly Payroll ({metrics.payroll.currentMonth})
               </span>
               <div className="p-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
@@ -762,7 +762,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-rose-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span title="Total recorded traffic fine amount in AED; see unresolved fines below." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
                 Traffic Fines
               </span>
               <div className="p-2 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-xl group-hover:bg-rose-600 group-hover:text-white transition-colors">
