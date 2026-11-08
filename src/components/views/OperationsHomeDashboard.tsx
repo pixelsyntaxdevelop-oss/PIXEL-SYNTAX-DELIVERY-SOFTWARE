@@ -54,7 +54,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
           onClose();
         }
       }}
-      className="inline-flex min-h-11 min-w-11 sm:min-h-9 sm:min-w-9 shrink-0 touch-manipulation items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+      className="inline-flex min-h-11 min-w-11 sm:min-h-9 sm:min-w-9 shrink-0 touch-manipulation items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-800 focus-visible:ring-4 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:bg-slate-800 dark:focus-visible:text-blue-200 dark:focus-visible:ring-blue-300/80 dark:focus-visible:ring-offset-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-300"
     >
       <Info className="h-4 w-4" aria-hidden="true" />
     </button>
