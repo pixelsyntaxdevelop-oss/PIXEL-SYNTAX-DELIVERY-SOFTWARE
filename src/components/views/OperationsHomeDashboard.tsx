@@ -46,6 +46,8 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
 }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [hasLoadedSuccessfully, setHasLoadedSuccessfully] = useState(false);
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'HR' | 'FLEET' | 'OPERATIONS' | 'ACCOUNTS'>('ALL');
 
   // Live Metric State
@@ -75,6 +77,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   const loadDashboardData = async () => {
     try {
       setRefreshing(true);
+      setLoadError(false);
 
       // Fetch Consolidated Stats
       let statsData: any = null;
@@ -333,7 +336,9 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
       });
 
       setExceptions(computedExceptions);
+      setHasLoadedSuccessfully(true);
     } catch (err) {
+      setLoadError(true);
       console.error('Failed to load dashboard operational data:', err);
     } finally {
       setLoading(false);
@@ -386,8 +391,34 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
     );
   }
 
+  if (loadError && !hasLoadedSuccessfully) {
+    return (
+      <div className="rounded-2xl border border-rose-200 bg-white p-6 text-center shadow-xs dark:border-rose-900 dark:bg-slate-900" role="alert">
+        <AlertTriangle className="mx-auto h-8 w-8 text-rose-600 dark:text-rose-400" aria-hidden="true" />
+        <h2 className="mt-3 text-base font-bold text-slate-900 dark:text-white">Dashboard data could not be loaded</h2>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          Operational figures are temporarily unavailable. Please try again.
+        </p>
+        <button type="button" onClick={loadDashboardData} disabled={refreshing}
+          className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+          {refreshing ? 'Retrying…' : 'Retry loading'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+          <span>Dashboard refresh failed. Showing the last loaded figures.</span>
+          <button type="button" onClick={loadDashboardData} disabled={refreshing}
+            className="min-h-10 rounded-lg border border-amber-400 px-3 py-2 font-semibold hover:bg-amber-100 disabled:opacity-50 dark:hover:bg-amber-900/40">
+            {refreshing ? 'Retrying…' : 'Retry refresh'}
+          </button>
+        </div>
+      )}
       {/* Top Welcome Header & Quick Action Row */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
