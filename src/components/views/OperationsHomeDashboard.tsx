@@ -23,11 +23,53 @@ import {
   Layers,
   ArrowUpRight,
   Sparkles,
+  Info,
 } from 'lucide-react';
 import { masterEmployeeService } from '../../services/masterEmployeeService';
 import { NavigationModule, SystemUserAccount } from '../../types/erp';
 import { apiClient } from '../../services/apiClient';
 import { resolveCanonicalStatus } from '../../utils/canonicalStatus';
+
+interface KpiHelpLabelProps {
+  id: string;
+  label: React.ReactNode;
+  description: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}
+
+const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isOpen, onToggle, onClose }) => (
+  <div className="relative flex min-w-0 items-center gap-1.5">
+    <span className="min-w-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</span>
+    <button
+      type="button"
+      aria-label={`About ${typeof label === 'string' ? label : 'this KPI'}`}
+      aria-expanded={isOpen}
+      aria-controls={`kpi-help-${id}`}
+      onClick={(event) => { event.stopPropagation(); onToggle(); }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.stopPropagation();
+          onClose();
+        }
+      }}
+      className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+    >
+      <Info className="h-4 w-4" aria-hidden="true" />
+    </button>
+    {isOpen && (
+      <div
+        id={`kpi-help-${id}`}
+        role="note"
+        onClick={(event) => event.stopPropagation()}
+        className="absolute left-0 top-full z-20 mt-1 w-64 max-w-[80vw] rounded-xl border border-slate-200 bg-white p-3 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-slate-700 shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+      >
+        {description}
+      </div>
+    )}
+  </div>
+);
 
 interface OperationsHomeDashboardProps {
   onNavigateModule: (module: NavigationModule) => void;
@@ -48,6 +90,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [hasLoadedSuccessfully, setHasLoadedSuccessfully] = useState(false);
+  const [openKpiHelp, setOpenKpiHelp] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'HR' | 'FLEET' | 'OPERATIONS' | 'ACCOUNTS'>('ALL');
 
   // Live Metric State
@@ -600,9 +643,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-blue-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span title="Total employees recorded; breakdown shows active, available and on-leave employees." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
-                Delivery Employees
-              </span>
+              <KpiHelpLabel id="employees" label={"Delivery Employees"} description="Total employees recorded; breakdown shows active, available and on-leave employees." isOpen={openKpiHelp === 'employees'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'employees' ? null : 'employees')} onClose={() => setOpenKpiHelp(null)} />
               <div className="p-2 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
                 <Users className="w-4 h-4" />
               </div>
@@ -634,9 +675,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-amber-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span title="Total fleet vehicles; breakdown shows assigned, available and garage vehicles." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
-                Fleet & Bikes
-              </span>
+              <KpiHelpLabel id="fleet" label={"Fleet & Bikes"} description="Total fleet vehicles; breakdown shows assigned, available and garage vehicles." isOpen={openKpiHelp === 'fleet'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'fleet' ? null : 'fleet')} onClose={() => setOpenKpiHelp(null)} />
               <div className="p-2 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-xl group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
                 <Truck className="w-4 h-4" />
               </div>
@@ -668,9 +707,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-sky-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span title="Total SIM cards; breakdown shows assigned, available and lost or faulty SIMs." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
-                SIM Inventory
-              </span>
+              <KpiHelpLabel id="sims" label={"SIM Inventory"} description="Total SIM cards; breakdown shows assigned, available and lost or faulty SIMs." isOpen={openKpiHelp === 'sims'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'sims' ? null : 'sims')} onClose={() => setOpenKpiHelp(null)} />
               <div className="p-2 bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 rounded-xl group-hover:bg-sky-600 group-hover:text-white transition-colors">
                 <Smartphone className="w-4 h-4" />
               </div>
@@ -702,9 +739,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-purple-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span title="Passports held by the company or rider; breakdown includes expiring passports." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
-                Passport Custody
-              </span>
+              <KpiHelpLabel id="passports" label={"Passport Custody"} description="Passports held by the company or rider; breakdown includes expiring passports." isOpen={openKpiHelp === 'passports'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'passports' ? null : 'passports')} onClose={() => setOpenKpiHelp(null)} />
               <div className="p-2 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 rounded-xl group-hover:bg-purple-600 group-hover:text-white transition-colors">
                 <Stamp className="w-4 h-4" />
               </div>
@@ -736,9 +771,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-emerald-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span title="Payroll total for the displayed period, with its current status." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
-                Monthly Payroll ({metrics.payroll.currentMonth})
-              </span>
+              <KpiHelpLabel id="payroll" label={`Monthly Payroll (${metrics.payroll.currentMonth})`} description="Payroll total for the displayed period, with its current status." isOpen={openKpiHelp === 'payroll'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'payroll' ? null : 'payroll')} onClose={() => setOpenKpiHelp(null)} />
               <div className="p-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                 <DollarSign className="w-4 h-4" />
               </div>
@@ -762,9 +795,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-rose-500 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span title="Total recorded traffic fine amount in AED; see unresolved fines below." className="cursor-help text-xs font-bold uppercase tracking-wider text-slate-500 underline decoration-dotted underline-offset-4 dark:text-slate-400">
-                Traffic Fines
-              </span>
+              <KpiHelpLabel id="fines" label={"Traffic Fines"} description="Total recorded traffic fine amount in AED; see unresolved fines below." isOpen={openKpiHelp === 'fines'} onToggle={() => setOpenKpiHelp(openKpiHelp === 'fines' ? null : 'fines')} onClose={() => setOpenKpiHelp(null)} />
               <div className="p-2 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-xl group-hover:bg-rose-600 group-hover:text-white transition-colors">
                 <AlertTriangle className="w-4 h-4" />
               </div>
