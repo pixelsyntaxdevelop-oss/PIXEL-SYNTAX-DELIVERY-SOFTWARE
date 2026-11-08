@@ -610,7 +610,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                     handleExceptionClick(exc);
                   }
                 }}
-                className="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500/80 shadow-xs cursor-pointer transition-all hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 group flex flex-col justify-between"
+                className="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500/80 shadow-xs cursor-pointer transition-all hover:shadow-md focus-visible:outline-none focus-visible:border-amber-700 focus-visible:ring-4 focus-visible:ring-amber-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:border-amber-300 dark:focus-visible:ring-amber-300/60 dark:focus-visible:ring-offset-slate-950 group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -625,7 +625,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                     >
                       {exc.severity} · {exc.type.replace(/_/g, ' ')}
                     </span>
-                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5 group-focus-visible:underline group-focus-visible:underline-offset-2 transition-transform flex items-center gap-0.5">
                       {exc.actionLabel}
                       <ChevronRight className="w-3 h-3" />
                     </span>
