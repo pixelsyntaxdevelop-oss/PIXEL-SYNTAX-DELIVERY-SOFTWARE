@@ -117,7 +117,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
               onClose();
               triggerRef.current?.focus();
             }}
-            className="inline-flex h-11 w-11 sm:h-9 sm:w-9 shrink-0 touch-manipulation cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-blue-100 hover:text-blue-800 active:bg-blue-200 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-800 focus-visible:ring-4 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:text-slate-300 dark:hover:bg-blue-900/60 dark:hover:text-blue-100 dark:active:bg-blue-900 dark:focus-visible:bg-slate-700 dark:focus-visible:text-blue-100 dark:focus-visible:ring-blue-300/80 dark:focus-visible:ring-offset-slate-800"
+            className="inline-flex h-11 w-11 sm:h-9 sm:w-9 shrink-0 touch-manipulation cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 motion-reduce:transition-none hover:bg-blue-100 hover:text-blue-800 active:bg-blue-200 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-800 focus-visible:ring-4 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:text-slate-300 dark:hover:bg-blue-900/60 dark:hover:text-blue-100 dark:active:bg-blue-900 dark:focus-visible:bg-slate-700 dark:focus-visible:text-blue-100 dark:focus-visible:ring-blue-300/80 dark:focus-visible:ring-offset-slate-800"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
