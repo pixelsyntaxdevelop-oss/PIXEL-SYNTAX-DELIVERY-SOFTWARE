@@ -75,7 +75,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, lang, label, descriptio
     <button
       ref={triggerRef}
       type="button"
-      aria-label={`About ${typeof label === 'string' ? label : 'this KPI'}`}
+      aria-label={translations[lang].aboutKpiHelp.replace('{label}', typeof label === 'string' ? label : 'KPI')}
       aria-expanded={isOpen}
       aria-controls={`kpi-help-${id}`}
       aria-describedby={isOpen ? `kpi-help-${id}` : undefined}
