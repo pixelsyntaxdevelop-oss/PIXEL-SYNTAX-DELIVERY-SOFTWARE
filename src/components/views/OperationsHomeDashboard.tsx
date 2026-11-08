@@ -51,6 +51,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
       aria-label={`About ${typeof label === 'string' ? label : 'this KPI'}`}
       aria-expanded={isOpen}
       aria-controls={`kpi-help-${id}`}
+      aria-describedby={isOpen ? `kpi-help-${id}` : undefined}
       onClick={(event) => { event.stopPropagation(); onToggle(); }}
       onKeyDown={(event) => {
         if (event.key === 'Escape' && isOpen) {
