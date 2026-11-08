@@ -670,18 +670,18 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-[clamp(1.75rem,7vw,2.25rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {metrics.employees.total}
             </div>
-            <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-x-3 gap-y-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-400 block text-[10px]">Active</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{metrics.employees.active}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Active</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-emerald-600 dark:text-emerald-400">{metrics.employees.active}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Available</span>
-                <span className="font-bold text-blue-600 dark:text-blue-400">{metrics.employees.available}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Available</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.employees.available}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">On Leave</span>
-                <span className="font-bold text-amber-600 dark:text-amber-400">{metrics.employees.onLeave}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">On Leave</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-amber-600 dark:text-amber-400">{metrics.employees.onLeave}</span>
               </div>
             </div>
           </div>
@@ -712,18 +712,18 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-[clamp(1.75rem,7vw,2.25rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {metrics.fleet.total}
             </div>
-            <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-x-3 gap-y-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-400 block text-[10px]">Assigned</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{metrics.fleet.assigned}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Assigned</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-emerald-600 dark:text-emerald-400">{metrics.fleet.assigned}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Available</span>
-                <span className="font-bold text-blue-600 dark:text-blue-400">{metrics.fleet.available}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Available</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.fleet.available}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Garage</span>
-                <span className="font-bold text-amber-600 dark:text-amber-400">{metrics.fleet.garage}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Garage</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-amber-600 dark:text-amber-400">{metrics.fleet.garage}</span>
               </div>
             </div>
           </div>
@@ -754,18 +754,18 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-[clamp(1.75rem,7vw,2.25rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {metrics.sims.total}
             </div>
-            <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-x-3 gap-y-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-400 block text-[10px]">Assigned</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{metrics.sims.assigned}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Assigned</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-emerald-600 dark:text-emerald-400">{metrics.sims.assigned}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Available</span>
-                <span className="font-bold text-blue-600 dark:text-blue-400">{metrics.sims.available}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Available</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.sims.available}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Lost/Faulty</span>
-                <span className="font-bold text-rose-600 dark:text-rose-400">{metrics.sims.lost}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Lost/Faulty</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-rose-600 dark:text-rose-400">{metrics.sims.lost}</span>
               </div>
             </div>
           </div>
@@ -796,18 +796,18 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-[clamp(1.75rem,7vw,2.25rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {metrics.passports.withCompany + metrics.passports.withRider}
             </div>
-            <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-x-3 gap-y-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-400 block text-[10px]">In Safe Box</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{metrics.passports.withCompany}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">In Safe Box</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-emerald-600 dark:text-emerald-400">{metrics.passports.withCompany}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">With Rider</span>
-                <span className="font-bold text-blue-600 dark:text-blue-400">{metrics.passports.withRider}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">With Rider</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.passports.withRider}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Expiring</span>
-                <span className="font-bold text-amber-600 dark:text-amber-400">{metrics.passports.expiring}</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Expiring</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-amber-600 dark:text-amber-400">{metrics.passports.expiring}</span>
               </div>
             </div>
           </div>
@@ -872,14 +872,14 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               AED {metrics.fines.totalAmount.toLocaleString()}
             </div>
-            <div className="grid grid-cols-2 gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
-                <span className="text-slate-400 block text-[10px]">Unresolved</span>
-                <span className="font-bold text-rose-600 dark:text-rose-400">{metrics.fines.newFines} fines</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Unresolved</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-rose-600 dark:text-rose-400">{metrics.fines.newFines} fines</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Payroll-Linked</span>
-                <span className="font-bold text-blue-600 dark:text-blue-400">{metrics.fines.payrollLinked} fines</span>
+                <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">Payroll-Linked</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.fines.payrollLinked} fines</span>
               </div>
             </div>
           </div>
