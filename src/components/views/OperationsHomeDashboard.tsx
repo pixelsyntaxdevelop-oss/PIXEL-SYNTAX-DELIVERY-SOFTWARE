@@ -667,7 +667,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <Users className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-3xl font-black text-slate-900 dark:text-white">
+            <div className="text-[clamp(1.75rem,7vw,2.25rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {metrics.employees.total}
             </div>
             <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
@@ -709,7 +709,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <Truck className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-3xl font-black text-slate-900 dark:text-white">
+            <div className="text-[clamp(1.75rem,7vw,2.25rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {metrics.fleet.total}
             </div>
             <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
@@ -751,7 +751,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <Smartphone className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-3xl font-black text-slate-900 dark:text-white">
+            <div className="text-[clamp(1.75rem,7vw,2.25rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {metrics.sims.total}
             </div>
             <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
@@ -793,7 +793,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <Stamp className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-3xl font-black text-slate-900 dark:text-white">
+            <div className="text-[clamp(1.75rem,7vw,2.25rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {metrics.passports.withCompany + metrics.passports.withRider}
             </div>
             <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-x-2 gap-y-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
@@ -835,7 +835,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <DollarSign className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-black text-slate-900 dark:text-white">
+            <div className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               AED {metrics.payroll.totalAmount.toLocaleString()}
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
@@ -869,7 +869,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <AlertTriangle className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-black text-slate-900 dark:text-white">
+            <div className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               AED {metrics.fines.totalAmount.toLocaleString()}
             </div>
             <div className="grid grid-cols-2 gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
