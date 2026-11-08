@@ -527,7 +527,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
             <span>+ Traffic Fine</span>
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-start sm:items-center gap-2">
             <span role="status" aria-live="polite" aria-atomic="true" className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
               {refreshing ? 'Refreshing dashboard…' : loadError ? 'Refresh failed' : hasLoadedSuccessfully ? 'Dashboard updated' : ''}
             </span>
@@ -570,14 +570,14 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
       </div>
 
       {/* Section 1: ATTENTION REQUIRED / EXCEPTION CENTER (Prominent & Actionable) */}
-      <div className="bg-amber-500/10 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 rounded-2xl p-5 shadow-xs">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-amber-500/10 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 rounded-2xl p-3 sm:p-5 shadow-xs">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-amber-500 text-slate-950 rounded-lg flex items-center justify-center font-black">
               <AlertTriangle className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex flex-wrap items-center gap-2">
                 <span>Attention Required & Operational Exceptions</span>
                 <span className="px-2 py-0.5 bg-amber-500 text-slate-950 rounded-full text-[10px] font-extrabold">
                   {exceptions.length} Action Items
@@ -613,9 +613,9 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 className="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500/80 shadow-xs cursor-pointer transition-all hover:shadow-md focus-visible:outline-none focus-visible:border-amber-700 focus-visible:ring-4 focus-visible:ring-amber-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:border-amber-300 dark:focus-visible:ring-amber-300/60 dark:focus-visible:ring-offset-slate-950 group flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                     <span
-                      className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                      className={`px-2 py-1 rounded-md text-[10px] sm:text-[9px] font-black uppercase tracking-wider break-words ${
                         exc.severity === 'CRITICAL'
                           ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
                           : exc.severity === 'HIGH'
@@ -625,15 +625,15 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                     >
                       {exc.severity} · {exc.type.replace(/_/g, ' ')}
                     </span>
-                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5 group-focus-visible:underline group-focus-visible:underline-offset-2 transition-transform flex items-center gap-0.5">
+                    <span className="text-xs sm:text-[10px] font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5 group-focus-visible:underline group-focus-visible:underline-offset-2 transition-transform flex items-center gap-0.5">
                       {exc.actionLabel}
                       <ChevronRight className="w-3 h-3" />
                     </span>
                   </div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-snug">
+                  <h4 className="text-sm sm:text-xs font-bold text-slate-900 dark:text-white leading-snug break-words">
                     {exc.title}
                   </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                  <p className="text-xs sm:text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed sm:line-clamp-2 break-words">
                     {exc.subtitle}
                   </p>
                 </div>
