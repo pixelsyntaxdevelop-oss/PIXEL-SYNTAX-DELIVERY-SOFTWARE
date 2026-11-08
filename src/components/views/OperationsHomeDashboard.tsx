@@ -602,7 +602,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 key={exc.id}
                 role="link"
                 tabIndex={0}
-                aria-label={`Open ${exc.title}: ${exc.actionLabel}`}
+                aria-label={`${exc.severity.toLowerCase()} severity: ${exc.title}. Open ${exc.actionLabel}`}
                 onClick={() => handleExceptionClick(exc)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
@@ -623,7 +623,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                           : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
                       }`}
                     >
-                      {exc.type.replace('_', ' ')}
+                      {exc.severity} · {exc.type.replace(/_/g, ' ')}
                     </span>
                     <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
                       {exc.actionLabel}
