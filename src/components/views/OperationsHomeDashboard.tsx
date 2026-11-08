@@ -32,6 +32,21 @@ import { apiClient } from '../../services/apiClient';
 import { resolveCanonicalStatus } from '../../utils/canonicalStatus';
 import { translations, LanguageMode } from '../../data/translations';
 
+// Presentation-only count labels; the underlying fine totals are unchanged.
+const formatKpiFineCount = (count: number, lang: LanguageMode): string => {
+  if (lang !== 'AR') return `${count} ${translations[lang].kpiFinesCountUnit}`;
+
+  const category = new Intl.PluralRules('ar').select(count);
+  const unit = category === 'one'
+    ? translations[lang].kpiFinesCountSingular
+    : category === 'two'
+      ? translations[lang].kpiFinesCountDual
+      : category === 'zero' || category === 'few'
+        ? translations[lang].kpiFinesCountUnit
+        : translations[lang].kpiFinesCountSingular;
+  return `${count} ${unit}`;
+};
+
 interface KpiHelpLabelProps {
   id: string;
   lang: LanguageMode;
@@ -936,11 +951,11 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownUnresolved}</span>
-                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-rose-600 dark:text-rose-400">{metrics.fines.newFines} {translations[lang].kpiFinesCountUnit}</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-rose-600 dark:text-rose-400">{formatKpiFineCount(metrics.fines.newFines, lang)}</span>
               </div>
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownPayrollLinked}</span>
-                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.fines.payrollLinked} {translations[lang].kpiFinesCountUnit}</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{formatKpiFineCount(metrics.fines.payrollLinked, lang)}</span>
               </div>
             </div>
           </div>
