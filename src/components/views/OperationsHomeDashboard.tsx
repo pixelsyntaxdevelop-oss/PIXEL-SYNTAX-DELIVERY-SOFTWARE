@@ -52,8 +52,18 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, label, description, isO
       }
     };
 
+    const dismissOnOutsideFocus = (event: FocusEvent) => {
+      if (event.target instanceof Node && !helpContainerRef.current?.contains(event.target)) {
+        onClose();
+      }
+    };
+
     document.addEventListener("pointerdown", dismissOnOutsidePointer);
-    return () => document.removeEventListener("pointerdown", dismissOnOutsidePointer);
+    document.addEventListener("focusin", dismissOnOutsideFocus);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOnOutsidePointer);
+      document.removeEventListener("focusin", dismissOnOutsideFocus);
+    };
   }, [isOpen, onClose]);
 
   return (
