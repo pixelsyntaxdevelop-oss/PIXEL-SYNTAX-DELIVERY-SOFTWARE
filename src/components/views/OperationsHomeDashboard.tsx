@@ -112,7 +112,7 @@ const KpiHelpLabel: React.FC<KpiHelpLabelProps> = ({ id, lang, label, descriptio
           <span className="min-w-0 flex-1">{description}</span>
           <button
             type="button"
-            aria-label={`Close ${typeof label === 'string' ? label : 'KPI'} help`}
+            aria-label={translations[lang].closeKpiHelpFor.replace('{label}', typeof label === 'string' ? label : 'KPI')}
             aria-describedby={`kpi-help-close-hint-${id}`}
             title={translations[lang].closeKpiHelp}
             onClick={(event) => {

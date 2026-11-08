@@ -53,6 +53,7 @@ export const translations = {
     saveChanges: "Save Changes",
     cancel: "Cancel",
     closeKpiHelp: "Close help",
+    closeKpiHelpFor: "Close help for {label}",
     confirm: "Confirm Action",
     
     // Common Status Labels
@@ -119,6 +120,7 @@ export const translations = {
     saveChanges: "حفظ التغييرات",
     cancel: "إلغاء",
     closeKpiHelp: "إغلاق المساعدة",
+    closeKpiHelpFor: "إغلاق المساعدة لـ {label}",
     confirm: "تأكيد الإجراء",
     
     // Common Status Labels
