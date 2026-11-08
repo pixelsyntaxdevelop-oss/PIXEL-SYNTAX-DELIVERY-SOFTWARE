@@ -936,11 +936,11 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownUnresolved}</span>
-                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-rose-600 dark:text-rose-400">{metrics.fines.newFines} fines</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-rose-600 dark:text-rose-400">{metrics.fines.newFines} {translations[lang].kpiFinesCountUnit}</span>
               </div>
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownPayrollLinked}</span>
-                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.fines.payrollLinked} fines</span>
+                <span className="block mt-1 text-sm sm:text-xs leading-tight font-bold break-words text-blue-600 dark:text-blue-400">{metrics.fines.payrollLinked} {translations[lang].kpiFinesCountUnit}</span>
               </div>
             </div>
           </div>
