@@ -423,7 +423,28 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {orders.map((o) => (
+              {orders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <Truck className="h-8 w-8 text-slate-300 dark:text-slate-600" aria-hidden="true" />
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        {lang === 'EN' ? 'No active dispatch orders' : 'لا توجد طلبات توصيل نشطة'}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {lang === 'EN' ? 'New dispatch orders will appear here when available.' : 'ستظهر طلبات التوصيل الجديدة هنا عند توفرها.'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => onNavigateModule('dispatch_orders')}
+                        className="mt-2 min-h-10 rounded-lg px-4 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:text-blue-400 dark:hover:bg-slate-800"
+                      >
+                        {lang === 'EN' ? 'Open Dispatch Orders' : 'فتح طلبات التوصيل'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : orders.map((o) => (
                 <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="p-3 font-bold text-slate-900 dark:text-white font-mono">{o.orderNumber}</td>
                   <td className="p-3">
