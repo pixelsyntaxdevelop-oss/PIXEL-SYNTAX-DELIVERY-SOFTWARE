@@ -81,6 +81,12 @@ export const translations = {
     kpiBreakdownPayrollLinked: "Payroll-Linked",
     kpiPayrollStatusLabel: "Status",
     kpiPayrollSplitCalculated: "Split-Calculated",
+    kpiPayrollStatusApproved: "Approved",
+    kpiPayrollStatusNoData: "No Data",
+    kpiPayrollStatusPending: "Pending",
+    kpiPayrollStatusDraft: "Draft",
+    kpiPayrollStatusProcessed: "Processed",
+    kpiPayrollStatusPaid: "Paid",
     confirm: "Confirm Action",
     
     // Common Status Labels
@@ -175,6 +181,12 @@ export const translations = {
     kpiBreakdownPayrollLinked: "مرتبط بالرواتب",
     kpiPayrollStatusLabel: "الحالة",
     kpiPayrollSplitCalculated: "محسوب بالتقسيم",
+    kpiPayrollStatusApproved: "معتمد",
+    kpiPayrollStatusNoData: "لا توجد بيانات",
+    kpiPayrollStatusPending: "قيد الانتظار",
+    kpiPayrollStatusDraft: "مسودة",
+    kpiPayrollStatusProcessed: "تمت المعالجة",
+    kpiPayrollStatusPaid: "مدفوع",
     confirm: "تأكيد الإجراء",
     
     // Common Status Labels
