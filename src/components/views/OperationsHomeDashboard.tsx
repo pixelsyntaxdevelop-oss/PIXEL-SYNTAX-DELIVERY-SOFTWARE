@@ -586,7 +586,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             </div>
           </div>
           <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
-            Directly click any item to jump to resolution
+            Click or press Enter on an item to jump to resolution
           </span>
         </div>
 
@@ -600,8 +600,17 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             {exceptions.map((exc) => (
               <div
                 key={exc.id}
+                role="link"
+                tabIndex={0}
+                aria-label={`Open ${exc.title}: ${exc.actionLabel}`}
                 onClick={() => handleExceptionClick(exc)}
-                className="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500/80 shadow-xs cursor-pointer transition-all hover:shadow-md group flex flex-col justify-between"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleExceptionClick(exc);
+                  }
+                }}
+                className="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500/80 shadow-xs cursor-pointer transition-all hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1.5">
