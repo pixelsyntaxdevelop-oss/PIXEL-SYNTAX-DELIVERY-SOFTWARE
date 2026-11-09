@@ -972,9 +972,14 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <DollarSign className="w-4 h-4" />
               </div>
             </div>
-            <div role="text" aria-label={`${translations[lang].kpiHeadingPayroll}: ${formatKpiCurrencyForScreenReader(metrics.payroll.totalAmount, lang)}`} title={!Number.isFinite(metrics.payroll.totalAmount) ? translations[lang].kpiCurrencyAmountUnavailable : undefined} tabIndex={!Number.isFinite(metrics.payroll.totalAmount) ? 0 : undefined} className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current focus-visible:ring-4 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-300 dark:focus-visible:ring-offset-slate-900 focus-visible:bg-sky-50 dark:focus-visible:bg-sky-950/60 focus-visible:rounded-md text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
+            <div role="text" aria-label={`${translations[lang].kpiHeadingPayroll}: ${formatKpiCurrencyForScreenReader(metrics.payroll.totalAmount, lang)}`} title={!Number.isFinite(metrics.payroll.totalAmount) ? translations[lang].kpiCurrencyAmountUnavailable : undefined} tabIndex={!Number.isFinite(metrics.payroll.totalAmount) ? 0 : undefined} className="peer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current focus-visible:ring-4 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-300 dark:focus-visible:ring-offset-slate-900 focus-visible:bg-sky-50 dark:focus-visible:bg-sky-950/60 focus-visible:rounded-md text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {Number.isFinite(metrics.payroll.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)}` : '—'}
             </div>
+            {!Number.isFinite(metrics.payroll.totalAmount) && (
+              <span aria-hidden="true" className="hidden peer-focus-visible:block mt-2 text-xs font-semibold leading-snug text-sky-800 dark:text-sky-200">
+                {translations[lang].kpiCurrencyAmountUnavailable}
+              </span>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px]">
               <span className="inline-flex max-w-full items-center rounded-full px-3 py-1.5 sm:px-2 sm:py-0.5 text-xs sm:text-[10px] leading-snug font-bold break-words bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                 {translations[lang].kpiPayrollStatusLabel}: {({ APPROVED: translations[lang].kpiPayrollStatusApproved, NO_DATA: translations[lang].kpiPayrollStatusNoData, PENDING: translations[lang].kpiPayrollStatusPending, DRAFT: translations[lang].kpiPayrollStatusDraft, PROCESSED: translations[lang].kpiPayrollStatusProcessed, PAID: translations[lang].kpiPayrollStatusPaid } as Record<string, string>)[metrics.payroll.status.trim().toUpperCase().replace(/[\s-]+/g, '_')] ?? metrics.payroll.status}
@@ -1006,9 +1011,14 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <AlertTriangle className="w-4 h-4" />
               </div>
             </div>
-            <div role="text" aria-label={`${translations[lang].kpiHeadingFines}: ${formatKpiCurrencyForScreenReader(metrics.fines.totalAmount, lang)}`} title={!Number.isFinite(metrics.fines.totalAmount) ? translations[lang].kpiCurrencyAmountUnavailable : undefined} tabIndex={!Number.isFinite(metrics.fines.totalAmount) ? 0 : undefined} className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current focus-visible:ring-4 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-300 dark:focus-visible:ring-offset-slate-900 focus-visible:bg-sky-50 dark:focus-visible:bg-sky-950/60 focus-visible:rounded-md text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
+            <div role="text" aria-label={`${translations[lang].kpiHeadingFines}: ${formatKpiCurrencyForScreenReader(metrics.fines.totalAmount, lang)}`} title={!Number.isFinite(metrics.fines.totalAmount) ? translations[lang].kpiCurrencyAmountUnavailable : undefined} tabIndex={!Number.isFinite(metrics.fines.totalAmount) ? 0 : undefined} className="peer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current focus-visible:ring-4 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-300 dark:focus-visible:ring-offset-slate-900 focus-visible:bg-sky-50 dark:focus-visible:bg-sky-950/60 focus-visible:rounded-md text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {Number.isFinite(metrics.fines.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)}` : '—'}
             </div>
+            {!Number.isFinite(metrics.fines.totalAmount) && (
+              <span aria-hidden="true" className="hidden peer-focus-visible:block mt-2 text-xs font-semibold leading-snug text-sky-800 dark:text-sky-200">
+                {translations[lang].kpiCurrencyAmountUnavailable}
+              </span>
+            )}
             <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block text-[11px] sm:text-[10px] leading-snug break-words">{translations[lang].kpiBreakdownUnresolved}</span>
