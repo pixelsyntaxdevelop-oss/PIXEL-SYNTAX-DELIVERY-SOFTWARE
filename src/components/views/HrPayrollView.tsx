@@ -114,6 +114,34 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
     reason: 'Personal Emergency',
   });
 
+  // Independent employee directory, not dependent on whether payroll is generated.
+  const [advanceDirectory, setAdvanceDirectory] = useState<Array<{ id: string; employee_code: string; full_name: string }>>([]);
+  const [advanceEmployeeSearch, setAdvanceEmployeeSearch] = useState('');
+  const [editingAdvanceId, setEditingAdvanceId] = useState<string | null>(null);
+  const [advanceError, setAdvanceError] = useState<string | null>(null);
+  const [confirmCancelAdvanceId, setConfirmCancelAdvanceId] = useState<string | null>(null);
+
+  const filteredAdvanceEmployees = useMemo(() => {
+    const query = advanceEmployeeSearch.trim().toLowerCase();
+    const matches = advanceDirectory.filter((e) =>
+      !query || e.full_name.toLowerCase().includes(query) || e.employee_code.toLowerCase().includes(query)
+    );
+    const selected = advanceDirectory.find((e) => e.id === advanceForm.employeeId);
+    return [...(selected ? [selected] : []), ...matches.filter((e) => e.id !== selected?.id)].slice(0, 120);
+  }, [advanceDirectory, advanceEmployeeSearch, advanceForm.employeeId]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch('/api/v1/payroll/employees')
+      .then((response) => {
+        if (!response.ok) throw new Error('Employee directory unavailable');
+        return response.json();
+      })
+      .then((data) => { if (mounted) setAdvanceDirectory(Array.isArray(data.employees) ? data.employees : []); })
+      .catch((err) => { if (mounted) setAdvanceError(String(err?.message || 'Employee lookup failed')); });
+    return () => { mounted = false; };
+  }, []);
+
   // Gratuity Calculator State
   const [gratuityForm, setGratuityForm] = useState({
     employeeQuery: 'EMP-10270',
@@ -331,22 +359,38 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
   const handleCreateAdvance = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/v1/payroll/advances', {
-        method: 'POST',
+      setAdvanceError(null);
+      const res = await fetch(editingAdvanceId ? '/api/v1/payroll/advances/' + encodeURIComponent(editingAdvanceId) : '/api/v1/payroll/advances', {
+        method: editingAdvanceId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(advanceForm),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success || data.advance || data.id) {
-          setIsAdvanceModalOpen(false);
-          setActionSuccessMsg(`Cash advance of AED ${advanceForm.amount} registered.`);
-          fetchPayrollData();
-          setTimeout(() => setActionSuccessMsg(null), 4000);
-        }
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setAdvanceError(data.error || 'Could not save advance.');
+        return;
       }
+      setIsAdvanceModalOpen(false);
+      setEditingAdvanceId(null);
+      setActionSuccessMsg(`DEMO advance record of AED ${advanceForm.amount} saved. No cash was transferred.`);
+      fetchPayrollData();
+      setTimeout(() => setActionSuccessMsg(null), 4000);
     } catch (err) {
-      console.error('Error creating advance:', err);
+      console.error('Error saving advance:', err);
+      setAdvanceError('Unable to save advance. Check your connection.');
+    }
+  };
+
+  const handleCancelAdvance = async (id: string) => {
+    try {
+      const res = await fetch('/api/v1/payroll/advances/' + encodeURIComponent(id), { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Could not cancel advance');
+      setConfirmCancelAdvanceId(null);
+      setActionSuccessMsg('DEMO advance cancelled; the original ledger entry is preserved.');
+      fetchPayrollData();
+    } catch (err: any) {
+      setAdvanceError(String(err?.message || 'Could not cancel advance'));
     }
   };
 
@@ -1139,11 +1183,17 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
             </div>
 
             <button
-              onClick={() => setIsAdvanceModalOpen(true)}
+              onClick={() => {
+                setEditingAdvanceId(null);
+                setAdvanceEmployeeSearch('');
+                setAdvanceError(null);
+                setAdvanceForm({ employeeId: '', amount: 1500, installments: 2, reason: 'Demo advance' });
+                setIsAdvanceModalOpen(true);
+              }}
               className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20"
             >
               <Plus className="w-4 h-4" />
-              {lang === 'EN' ? 'Grant Cash Advance' : 'صرف سلفة جديدة'}
+              {lang === 'EN' ? 'Record Demo Advance' : 'تسجيل سلفة تجريبية'}
             </button>
           </div>
 
@@ -1157,7 +1207,8 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                   <th className="p-3 text-right">Monthly Installment</th>
                   <th className="p-3 text-right">Remaining Balance</th>
                   <th className="p-3 text-center">Status</th>
-                  <th className="p-3 text-right">Granted Date</th>
+                  <th className="p-3 text-right">Recorded Date</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -1171,7 +1222,32 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                     <td className="p-3 text-center">
                       <Badge variant={adv.status === 'ACTIVE' ? 'info' : 'success'}>{adv.status}</Badge>
                     </td>
-                    <td className="p-3 text-right font-mono text-slate-400">{adv.disbursement_date}</td>
+                    <td className="p-3 text-right font-mono text-slate-400">{adv.registered_date}</td>
+                    <td className="p-3 text-right">
+                      {adv.status === 'ACTIVE' && (
+                        <div className="flex items-center justify-end gap-2">
+                          <button type="button" className="px-2 py-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold"
+                            onClick={() => {
+                              setEditingAdvanceId(adv.id);
+                              setAdvanceEmployeeSearch(adv.employee_name || '');
+                              setAdvanceError(null);
+                              setAdvanceForm({
+                                employeeId: adv.employeeId || adv.employee_id,
+                                amount: Number(adv.amount || 0),
+                                installments: Number(adv.installments || 1),
+                                reason: adv.reason || '',
+                              });
+                              setIsAdvanceModalOpen(true);
+                            }}>Edit</button>
+                          <button type="button" className="px-2 py-1.5 rounded-lg bg-rose-50 text-rose-700 font-bold"
+                            onClick={() => {
+                              if (confirmCancelAdvanceId === adv.id) {
+                                handleCancelAdvance(adv.id);
+                              } else setConfirmCancelAdvanceId(adv.id);
+                            }}>{confirmCancelAdvanceId === adv.id ? 'Confirm cancel' : 'Cancel'}</button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1505,26 +1581,31 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
         <Modal
           isOpen={isAdvanceModalOpen}
           onClose={() => setIsAdvanceModalOpen(false)}
-          title="Disburse Cash Advance to Employee"
+          title={editingAdvanceId ? 'Edit Demo Advance' : 'Register Demo Advance'}
         >
           <form onSubmit={handleCreateAdvance} className="space-y-4 text-slate-900 dark:text-white">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Select Rider / Employee
               </label>
+              <input type="search" value={advanceEmployeeSearch} disabled={Boolean(editingAdvanceId)}
+                onChange={(e) => setAdvanceEmployeeSearch(e.target.value)}
+                placeholder="Search by name or employee code..."
+                className="w-full mb-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-base sm:text-xs" />
               <select
                 value={advanceForm.employeeId}
                 onChange={(e) => setAdvanceForm({ ...advanceForm, employeeId: e.target.value })}
                 required
-                className="w-full px-3 py-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold"
+                disabled={Boolean(editingAdvanceId)}
+                className="w-full px-3 py-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base sm:text-xs font-semibold"
               >
                 <option value="">Choose Employee...</option>
-                {records.map((r) => (
-                  <option key={r.employee_id} value={r.employee_id}>
-                    {r.employee_name} ({r.employee_code})
-                  </option>
+                {filteredAdvanceEmployees.map((e) => (
+                  <option key={e.id} value={e.id}>{e.full_name} ({e.employee_code})</option>
                 ))}
               </select>
+              {advanceDirectory.length > 120 && <p className="text-[11px] text-slate-500 mt-1">Search to narrow the full employee directory ({advanceDirectory.length} employees).</p>}
+              {advanceError && <p role="alert" className="text-xs text-red-600 mt-1">{advanceError}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -1573,7 +1654,7 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
             </div>
 
             <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-2xl border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-200">
-              Monthly deduction will be <span className="font-black">AED {Math.round(advanceForm.amount / (advanceForm.installments || 1))} / month</span> automatically subtracted during payroll cycles.
+              Planned installment: <span className="font-black">AED {Math.round(advanceForm.amount / (advanceForm.installments || 1))} / month</span>. This is a demo ledger entry only; automatic payroll deductions and actual cash disbursement are not enabled yet.
             </div>
 
             <div className="flex gap-3 pt-2">
@@ -1581,7 +1662,7 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                 type="submit"
                 className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold shadow-md shadow-blue-600/20"
               >
-                Confirm & Disburse Advance
+                {editingAdvanceId ? 'Save Advance Changes' : 'Save Demo Advance Record'}
               </button>
               <button
                 type="button"

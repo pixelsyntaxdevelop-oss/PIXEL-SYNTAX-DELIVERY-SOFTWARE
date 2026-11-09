@@ -135,13 +135,32 @@ export async function handleDemoPayrollWorkerRoutes(
       return json(await monthData(db, tenantId, periodKey));
     }
 
+    if (method === 'GET' && path === '/api/v1/payroll/employees') {
+      const employees = await pageRecords(db, 'employees', tenantId, { archived: false });
+      return json({
+        success: true,
+        employees: employees.map((e: any) => ({
+          id: e.id, employee_code: e.employee_code, full_name: e.full_name,
+          status: e.current_status,
+        })),
+      });
+    }
+
     if (method === 'GET' && path === '/api/v1/payroll/advances') {
-      const { data, error } = await db.from('employee_loans').select('*')
-        .eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(500);
-      if (error) return json({ error: error.message }, 500);
-      const advances = (data || []).map((l: any) => ({
-        ...l, employeeId: l.employee_id, amount: Number(l.principal_amount),
+      const loans = await pageRecords(db, 'employee_loans', tenantId);
+      const employees = await pageRecords(db, 'employees', tenantId);
+      const byId = new Map<string, any>(employees.map((e: any) => [e.id, e]));
+      const advances = loans.map((l: any) => ({
+        ...l,
+        employeeId: l.employee_id,
+        employee_name: byId.get(l.employee_id)?.full_name || 'Unknown employee',
+        employee_code: byId.get(l.employee_id)?.employee_code || l.employee_id,
+        reason: l.notes || '',
+        amount: Number(l.principal_amount),
+        monthly_deduction: Number(l.monthly_installment),
+        remaining_amount: Number(l.remaining_balance),
         installments: Math.max(1, Math.round(Number(l.principal_amount) / Math.max(1, Number(l.monthly_installment)))),
+        registered_date: l.created_at?.slice(0, 10) || '',
       }));
       return json({ success: true, advances });
     }
@@ -165,6 +184,40 @@ export async function handleDemoPayrollWorkerRoutes(
         start_month: month, status: 'ACTIVE', notes: String(body.reason || 'Demo advance'),
       }).select().single();
       if (error) return json({ error: error.message }, 500);
+      return json({ success: true, advance: data });
+    }
+
+    const advanceIdMatch = path.match(/^\/api\/v1\/payroll\/advances\/([^/]+)$/);
+    if (advanceIdMatch && (method === 'PATCH' || method === 'DELETE')) {
+      const id = decodeURIComponent(advanceIdMatch[1]);
+      const { data: existing, error: lookupError } = await db.from('employee_loans').select('*')
+        .eq('tenant_id', tenantId).eq('id', id).maybeSingle();
+      if (lookupError) return json({ error: lookupError.message }, 500);
+      if (!existing) return json({ error: 'Advance not found in this company.' }, 404);
+      if (existing.status !== 'ACTIVE') return json({ error: 'Only active advances can be changed.' }, 409);
+      let updates: Record<string, unknown>;
+      if (method === 'DELETE') {
+        updates = { status: 'CANCELLED', notes: String(existing.notes || '') + ' | Cancelled by authorized demo staff' };
+      } else {
+        if (Number(existing.remaining_balance) !== Number(existing.principal_amount)) {
+          return json({ error: 'Advance with repayments cannot be edited. Reconcile the balance first.' }, 409);
+        }
+        const input: any = await request.json().catch(() => ({}));
+        const amount = Number(input.amount);
+        const installments = Number(input.installments);
+        if (!Number.isFinite(amount) || amount <= 0 || amount > 100000 ||
+          !Number.isInteger(installments) || installments < 1 || installments > 24) {
+          return json({ error: 'Invalid amount or installment count.' }, 400);
+        }
+        updates = { principal_amount: round(amount), remaining_balance: round(amount),
+          monthly_installment: round(amount / installments), notes: String(input.reason || '').slice(0, 500) };
+      }
+      const { data, error } = await db.from('employee_loans')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('tenant_id', tenantId).eq('id', id).eq('status', 'ACTIVE')
+        .select('*').maybeSingle();
+      if (error) return json({ error: error.message }, 500);
+      if (!data) return json({ error: 'Advance changed by another user. Refresh and try again.' }, 409);
       return json({ success: true, advance: data });
     }
 
