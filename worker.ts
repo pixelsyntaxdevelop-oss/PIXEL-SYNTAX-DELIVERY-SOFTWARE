@@ -2200,7 +2200,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
     'passport_status', 'passport_handler', 'passport_location', 'passport_receive_date',
     'emirates_id_number', 'emirates_id_expiry', 'visa_number', 'visa_expiry',
     'driving_license_number', 'driving_license_expiry', 'joining_date', 'employment_type',
-    'job_title', 'designation', 'contractor_id', 'contractor', 'project_id', 'project_name',
+    'job_title', 'designation', 'contractor_id', 'contractor', 'visa_contractor_type', 'project_id', 'project_name',
     'project_code', 'supervisor_id', 'team_leader_id', 'team_id', 'team_name', 'shift_id',
     'shift_name', 'manager_id', 'manager_name', 'current_status', 'status_reason',
     'status_effective_date', 'salary_type', 'basic_salary', 'allowances', 'leave_opening_balance',
