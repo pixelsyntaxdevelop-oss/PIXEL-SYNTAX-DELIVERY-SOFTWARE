@@ -135,6 +135,89 @@ export async function assignVehicleAuthoritative(
   const assignDate = assignmentDate || now.split('T')[0];
   const assignTime = assignmentTime || (now.split('T')[1] ? now.split('T')[1].slice(0, 8) : '08:00:00');
 
+  // The isolated demo must NEVER use the legacy multi-statement fallback that
+  // swallows Supabase insert errors and reports success despite partial custody.
+  // Use an allowlisted PostgREST RPC that commits employee, vehicle, history and
+  // audit together, or fails with all records unchanged.
+  if (tenantId === 'company_pixel_syntax') {
+    if (!supabase) return { success: false, error: 'Demo database is unavailable; assignment was not saved.' };
+    try {
+      let empLookup = await supabase.from('employees')
+        .select('id,full_name,current_bike_id,employee_code')
+        .eq('tenant_id', tenantId).eq('id', employeeId).maybeSingle();
+      if (empLookup.error) return { success: false, error: empLookup.error.message };
+      if (!empLookup.data) {
+        empLookup = await supabase.from('employees')
+          .select('id,full_name,current_bike_id,employee_code')
+          .eq('tenant_id', tenantId).eq('employee_code', employeeId).maybeSingle();
+      }
+      if (empLookup.error || !empLookup.data)
+        return { success: false, error: empLookup.error?.message || 'Employee not found in demo company.' };
+
+      let vehicleLookup = await supabase.from('vehicles')
+        .select('id,plate_number,current_employee_id')
+        .eq('tenant_id', tenantId).eq('id', vehicleId).maybeSingle();
+      if (vehicleLookup.error) return { success: false, error: vehicleLookup.error.message };
+      if (!vehicleLookup.data) {
+        vehicleLookup = await supabase.from('vehicles')
+          .select('id,plate_number,current_employee_id')
+          .eq('tenant_id', tenantId).eq('plate_number', vehicleId).maybeSingle();
+      }
+      if (vehicleLookup.error || !vehicleLookup.data)
+        return { success: false, error: vehicleLookup.error?.message || 'Bike not found in demo company.' };
+
+      const employee = empLookup.data;
+      const vehicle = vehicleLookup.data;
+      if (employee.current_bike_id === vehicle.id)
+        return { success: false, error: 'Employee already holds this bike; duplicate assignment blocked.' };
+
+      const { data, error } = await supabase.rpc('rpc_swap_vehicle', {
+        p_tenant_id: tenantId,
+        p_employee_id: employee.id,
+        p_old_vehicle_id: employee.current_bike_id || null,
+        p_new_vehicle_id: vehicle.id,
+        p_return_odometer: null,
+        p_condition_on_return: null,
+        p_return_notes: handoverNotes || 'Verified demo handover',
+        p_new_starting_odometer: startingOdometer ?? null,
+        p_new_condition: condition || 'Good Condition',
+        p_replacement_reason: forceReassign ? 'CONFIRMED_FORCE_REASSIGN' : 'ASSIGN',
+        p_assigned_by: resolveHumanAssignedBy(assignedBy, db),
+        p_user_id: params.userId || params.assignedById || null,
+      });
+      if (error || !data?.success) {
+        const reason = String(error?.message || data?.error || 'Atomic bike assignment failed');
+        const reassignmentRequired = /already assigned|explicit confirmation required/i.test(reason);
+        let currentAssignee: AssignmentResult['currentAssignee'] | undefined;
+        if (reassignmentRequired) {
+          const { data: active } = await supabase.from('vehicle_assignments')
+            .select('employee_id,assignment_date')
+            .eq('tenant_id', tenantId).eq('vehicle_id', vehicle.id)
+            .eq('assignment_status', 'ACTIVE').is('return_date', null).maybeSingle();
+          if (active) currentAssignee = {
+            employee_id: active.employee_id, employee_name: 'Current assignee',
+            assignment_date: active.assignment_date,
+          };
+        }
+        return { success: false, error: reason, reassignmentRequired, currentAssignee };
+      }
+      const assignmentId = data.assignment?.id || data.assignment_id;
+      const assignmentQuery = assignmentId
+        ? await supabase.from('vehicle_assignments').select('*')
+            .eq('tenant_id', tenantId).eq('id', assignmentId).maybeSingle()
+        : null;
+      return {
+        success: true,
+        employee: { ...employee, current_bike_id: vehicle.id, current_bike_plate: vehicle.plate_number },
+        vehicle,
+        assignment: assignmentQuery?.data || data.assignment || data,
+        message: 'Bike custody and history saved atomically for ' + employee.full_name + '.',
+      };
+    } catch (err: any) {
+      return { success: false, error: String(err?.message || 'Demo bike transaction failed') };
+    }
+  }
+
   // 1. Fetch Vehicle (Supabase first, memory fallback)
   let vehicle: any = null;
   if (supabase) {
