@@ -230,15 +230,25 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   const [openKpiHelp, setOpenKpiHelp] = useState<string | null>(null);
   const [openUnavailableCurrencyHint, setOpenUnavailableCurrencyHint] = useState<'payroll' | 'fines' | null>(null);
 
-  // Dismiss the touch explanation when the user taps elsewhere on the page.
+  // Dismiss the touch explanation on outside interaction or Escape.
   useEffect(() => {
     if (!openUnavailableCurrencyHint) return;
     const dismissOnOutsidePointer = (event: PointerEvent) => {
       if (event.target instanceof Element && event.target.closest('[data-unavailable-currency-hint]')) return;
       setOpenUnavailableCurrencyHint(null);
     };
+    const dismissOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpenUnavailableCurrencyHint(null);
+      // Keep keyboard users on the trigger that opened the explanation.
+      document.querySelector<HTMLButtonElement>(`[data-unavailable-currency-trigger="${openUnavailableCurrencyHint}"]`)?.focus();
+    };
     document.addEventListener('pointerdown', dismissOnOutsidePointer);
-    return () => document.removeEventListener('pointerdown', dismissOnOutsidePointer);
+    document.addEventListener('keydown', dismissOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', dismissOnOutsidePointer);
+      document.removeEventListener('keydown', dismissOnEscape);
+    };
   }, [openUnavailableCurrencyHint]);
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'HR' | 'FLEET' | 'OPERATIONS' | 'ACCOUNTS'>('ALL');
 
@@ -988,7 +998,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
               {Number.isFinite(metrics.payroll.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)}` : '—'}
             </div>
             {!Number.isFinite(metrics.payroll.totalAmount) && (
-              <button type="button" data-unavailable-currency-hint className="mt-2 flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-sky-800 underline underline-offset-2 touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 dark:text-sky-200 dark:focus-visible:outline-sky-300 sm:hidden" aria-expanded={openUnavailableCurrencyHint === 'payroll'} aria-controls="kpi-unavailable-payroll" onClick={() => setOpenUnavailableCurrencyHint(openUnavailableCurrencyHint === 'payroll' ? null : 'payroll')}>
+              <button type="button" data-unavailable-currency-hint data-unavailable-currency-trigger="payroll" className="mt-2 flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-sky-800 underline underline-offset-2 touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 dark:text-sky-200 dark:focus-visible:outline-sky-300 sm:hidden" aria-expanded={openUnavailableCurrencyHint === 'payroll'} aria-controls="kpi-unavailable-payroll" onClick={() => setOpenUnavailableCurrencyHint(openUnavailableCurrencyHint === 'payroll' ? null : 'payroll')}>
                 <Info className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />{translations[lang].kpiCurrencyAmountUnavailable}
               </button>
             )}
@@ -1032,7 +1042,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
               {Number.isFinite(metrics.fines.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)}` : '—'}
             </div>
             {!Number.isFinite(metrics.fines.totalAmount) && (
-              <button type="button" data-unavailable-currency-hint className="mt-2 flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-sky-800 underline underline-offset-2 touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 dark:text-sky-200 dark:focus-visible:outline-sky-300 sm:hidden" aria-expanded={openUnavailableCurrencyHint === 'fines'} aria-controls="kpi-unavailable-fines" onClick={() => setOpenUnavailableCurrencyHint(openUnavailableCurrencyHint === 'fines' ? null : 'fines')}>
+              <button type="button" data-unavailable-currency-hint data-unavailable-currency-trigger="fines" className="mt-2 flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-sky-800 underline underline-offset-2 touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 dark:text-sky-200 dark:focus-visible:outline-sky-300 sm:hidden" aria-expanded={openUnavailableCurrencyHint === 'fines'} aria-controls="kpi-unavailable-fines" onClick={() => setOpenUnavailableCurrencyHint(openUnavailableCurrencyHint === 'fines' ? null : 'fines')}>
                 <Info className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />{translations[lang].kpiCurrencyAmountUnavailable}
               </button>
             )}
