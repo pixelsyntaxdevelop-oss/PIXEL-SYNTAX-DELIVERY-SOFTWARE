@@ -39,6 +39,17 @@ const formatKpiCurrencyAmount = (amount: number, lang: LanguageMode): string =>
     maximumFractionDigits: 2,
   }).format(amount);
 
+// Choose localized currency-unit forms for spoken KPI totals.
+const kpiCurrencyUnit = (count: number, lang: LanguageMode, unit: 'Dirham' | 'Fils'): string => {
+  const forms = translations[lang];
+  const singular = unit === 'Dirham' ? forms.kpiCurrencyDirhamOne : forms.kpiCurrencyFilsOne;
+  const dual = unit === 'Dirham' ? forms.kpiCurrencyDirhamTwo : forms.kpiCurrencyFilsTwo;
+  const plural = unit === 'Dirham' ? forms.kpiCurrencyAedAccessible : forms.kpiCurrencyFilsAccessible;
+  if (lang === 'EN') return count === 1 ? singular : plural;
+  const category = new Intl.PluralRules('ar').select(count);
+  return category === 'one' ? singular : category === 'two' ? dual : category === 'zero' || category === 'few' ? plural : singular;
+};
+
 // Spell out whole dirhams and fractional fils for assistive technology.
 // Round to the same two decimals as the visual amount before splitting units.
 const formatKpiCurrencyForScreenReader = (amount: number, lang: LanguageMode): string => {
@@ -47,8 +58,8 @@ const formatKpiCurrencyForScreenReader = (amount: number, lang: LanguageMode): s
   const dirhams = Math.trunc(roundedFils / 100);
   const fils = roundedFils % 100;
   const numberFormatter = new Intl.NumberFormat(lang === 'AR' ? 'ar-AE' : 'en-AE', { maximumFractionDigits: 0 });
-  const whole = `${numberFormatter.format(dirhams)} ${translations[lang].kpiCurrencyAedAccessible}`;
-  const spokenAmount = fils === 0 ? whole : `${whole} ${translations[lang].kpiCurrencyAmountAnd} ${numberFormatter.format(fils)} ${translations[lang].kpiCurrencyFilsAccessible}`;
+  const whole = `${numberFormatter.format(dirhams)} ${kpiCurrencyUnit(dirhams, lang, 'Dirham')}`;
+  const spokenAmount = fils === 0 ? whole : `${whole} ${translations[lang].kpiCurrencyAmountAnd} ${numberFormatter.format(fils)} ${kpiCurrencyUnit(fils, lang, 'Fils')}`;
   return amount < 0 && roundedFils !== 0 ? `${translations[lang].kpiCurrencyNegative} ${spokenAmount}` : spokenAmount;
 };
 
