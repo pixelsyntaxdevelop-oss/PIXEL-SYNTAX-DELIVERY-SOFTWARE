@@ -973,7 +973,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
               </div>
             </div>
             <div role="text" aria-label={`${translations[lang].kpiHeadingPayroll}: ${formatKpiCurrencyForScreenReader(metrics.payroll.totalAmount, lang)}`} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
-              {translations[lang].kpiCurrencyAed} {formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)}
+              {Number.isFinite(metrics.payroll.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)}` : '—'}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px]">
               <span className="inline-flex max-w-full items-center rounded-full px-3 py-1.5 sm:px-2 sm:py-0.5 text-xs sm:text-[10px] leading-snug font-bold break-words bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
@@ -1007,7 +1007,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
               </div>
             </div>
             <div role="text" aria-label={`${translations[lang].kpiHeadingFines}: ${formatKpiCurrencyForScreenReader(metrics.fines.totalAmount, lang)}`} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
-              {translations[lang].kpiCurrencyAed} {formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)}
+              {Number.isFinite(metrics.fines.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)}` : '—'}
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
               <div>
