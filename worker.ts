@@ -287,7 +287,7 @@ function getWorkerSupabaseClient(env?: any): SupabaseClient | null {
             headers.delete('authorization');
             headers.delete('apikey');
             headers.set('x-erp-db-gateway-token', gatewayToken);
-            return fetch(target.toString(), { ...init, headers, redirect: 'error' });
+            return fetch(target.toString(), { ...init, headers, redirect: 'manual' });
           },
         },
       });
