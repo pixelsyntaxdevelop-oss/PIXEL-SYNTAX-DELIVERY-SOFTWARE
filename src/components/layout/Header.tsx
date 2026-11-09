@@ -556,7 +556,7 @@ export const Header: React.FC<HeaderProps> = ({
       )}
 
       {/* Right: Tenant Company & Status Badges, Icons & User Profile */}
-      <div className="flex items-center gap-0 sm:gap-2.5 shrink-0>
+      <div className="flex items-center gap-0 sm:gap-2.5 shrink-0">
         {/* Mobile Search Icon Toggle */}
         <button
           onClick={() => {
