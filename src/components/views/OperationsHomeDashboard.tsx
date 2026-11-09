@@ -39,6 +39,19 @@ const formatKpiCurrencyAmount = (amount: number, lang: LanguageMode): string =>
     maximumFractionDigits: 2,
   }).format(amount);
 
+// Spell out whole dirhams and fractional fils for assistive technology.
+// Round to the same two decimals as the visual amount before splitting units.
+const formatKpiCurrencyForScreenReader = (amount: number, lang: LanguageMode): string => {
+  if (!Number.isFinite(amount)) return `${formatKpiCurrencyAmount(amount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`;
+  const roundedFils = Math.round((Math.abs(amount) + Number.EPSILON) * 100);
+  const dirhams = Math.trunc(roundedFils / 100);
+  const fils = roundedFils % 100;
+  const numberFormatter = new Intl.NumberFormat(lang === 'AR' ? 'ar-AE' : 'en-AE', { maximumFractionDigits: 0 });
+  const whole = `${numberFormatter.format(dirhams)} ${translations[lang].kpiCurrencyAedAccessible}`;
+  const spokenAmount = fils === 0 ? whole : `${whole} ${translations[lang].kpiCurrencyAmountAnd} ${numberFormatter.format(fils)} ${translations[lang].kpiCurrencyFilsAccessible}`;
+  return amount < 0 && roundedFils !== 0 ? `${translations[lang].kpiCurrencyNegative} ${spokenAmount}` : spokenAmount;
+};
+
 // Localize known payroll month labels for display without changing API period values.
 const formatKpiPayrollMonth = (period: string, lang: LanguageMode): string => {
   if (lang !== 'AR') return period;
@@ -932,7 +945,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <DollarSign className="w-4 h-4" />
               </div>
             </div>
-            <div role="text" aria-label={`${translations[lang].kpiHeadingPayroll}: ${formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
+            <div role="text" aria-label={`${translations[lang].kpiHeadingPayroll}: ${formatKpiCurrencyForScreenReader(metrics.payroll.totalAmount, lang)}`} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {translations[lang].kpiCurrencyAed} {formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px]">
@@ -966,7 +979,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <AlertTriangle className="w-4 h-4" />
               </div>
             </div>
-            <div role="text" aria-label={`${translations[lang].kpiHeadingFines}: ${formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
+            <div role="text" aria-label={`${translations[lang].kpiHeadingFines}: ${formatKpiCurrencyForScreenReader(metrics.fines.totalAmount, lang)}`} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {translations[lang].kpiCurrencyAed} {formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)}
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
