@@ -972,7 +972,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <DollarSign className="w-4 h-4" />
               </div>
             </div>
-            <div role="text" aria-label={`${translations[lang].kpiHeadingPayroll}: ${formatKpiCurrencyForScreenReader(metrics.payroll.totalAmount, lang)}`} title={!Number.isFinite(metrics.payroll.totalAmount) ? translations[lang].kpiCurrencyAmountUnavailable : undefined} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
+            <div role="text" aria-label={`${translations[lang].kpiHeadingPayroll}: ${formatKpiCurrencyForScreenReader(metrics.payroll.totalAmount, lang)}`} title={!Number.isFinite(metrics.payroll.totalAmount) ? translations[lang].kpiCurrencyAmountUnavailable : undefined} tabIndex={!Number.isFinite(metrics.payroll.totalAmount) ? 0 : undefined} className="focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-500/70 dark:focus-visible:ring-sky-300/70 focus-visible:rounded-md text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {Number.isFinite(metrics.payroll.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)}` : '—'}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px]">
@@ -1006,7 +1006,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
                 <AlertTriangle className="w-4 h-4" />
               </div>
             </div>
-            <div role="text" aria-label={`${translations[lang].kpiHeadingFines}: ${formatKpiCurrencyForScreenReader(metrics.fines.totalAmount, lang)}`} title={!Number.isFinite(metrics.fines.totalAmount) ? translations[lang].kpiCurrencyAmountUnavailable : undefined} className="text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
+            <div role="text" aria-label={`${translations[lang].kpiHeadingFines}: ${formatKpiCurrencyForScreenReader(metrics.fines.totalAmount, lang)}`} title={!Number.isFinite(metrics.fines.totalAmount) ? translations[lang].kpiCurrencyAmountUnavailable : undefined} tabIndex={!Number.isFinite(metrics.fines.totalAmount) ? 0 : undefined} className="focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-500/70 dark:focus-visible:ring-sky-300/70 focus-visible:rounded-md text-[clamp(1.5rem,6vw,2rem)] leading-tight font-black tabular-nums tracking-tight break-words text-slate-900 dark:text-white">
               {Number.isFinite(metrics.fines.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)}` : '—'}
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-[11px] tabular-nums">
