@@ -14,7 +14,7 @@ async function pageRecords(db: SupabaseClient, table: string, tenantId: string, 
   const records: any[] = [];
   const batchSize = 500;
   for (let index = 0; index < 20; index++) {
-    let q = db.from(table).select('*').eq('tenant_id', tenantId).range(index * batchSize, index * batchSize + batchSize - 1);
+    let q = db.from(table).select('*').eq('tenant_id', tenantId).order('id', { ascending: true }).range(index * batchSize, index * batchSize + batchSize - 1);
     if (extra?.period) q = q.eq('period_month', extra.period);
     if (extra?.archived !== undefined) q = q.eq('is_archived', extra.archived);
     const { data, error } = await q;
