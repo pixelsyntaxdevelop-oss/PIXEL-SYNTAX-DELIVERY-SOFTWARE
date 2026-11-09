@@ -199,3 +199,76 @@ REVOKE ALL ON FUNCTION public.demo_assign_vehicle_atomic(text,text,text,date,tim
 GRANT EXECUTE ON FUNCTION public.demo_assign_vehicle_atomic(text,text,text,date,time without time zone,numeric,text,text,text,boolean) TO service_role;
 REVOKE ALL ON FUNCTION public.rpc_swap_vehicle(varchar,varchar,varchar,varchar,numeric,text,text,numeric,text,text,varchar,varchar) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_swap_vehicle(varchar,varchar,varchar,varchar,numeric,text,text,numeric,text,text,varchar,varchar) TO service_role;
+
+-- The 14-argument overload preserves the exact chosen UAE handover date/time.
+CREATE OR REPLACE FUNCTION public.rpc_swap_vehicle(p_tenant_id character varying, p_employee_id character varying, p_old_vehicle_id character varying, p_new_vehicle_id character varying, p_return_odometer numeric, p_condition_on_return text, p_return_notes text, p_new_starting_odometer numeric, p_new_condition text, p_replacement_reason text, p_assigned_by character varying, p_user_id character varying, p_assignment_date date, p_assignment_time time without time zone)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+ v_employee public.employees%ROWTYPE;
+ v_old public.vehicles%ROWTYPE;
+ v_old_assignment public.vehicle_assignments%ROWTYPE;
+ v_response jsonb;
+ v_at timestamptz:=clock_timestamp();
+ v_day date:=coalesce(p_assignment_date,(now() AT TIME ZONE 'Asia/Dubai')::date);
+ v_clock time:=coalesce(p_assignment_time,(now() AT TIME ZONE 'Asia/Dubai')::time);
+ v_confirm_force boolean := p_replacement_reason = 'CONFIRMED_FORCE_REASSIGN';
+ v_odo numeric;
+BEGIN
+ IF nullif(btrim(coalesce(p_tenant_id,'')),'') IS NULL OR
+  nullif(btrim(coalesce(p_employee_id,'')),'') IS NULL OR
+  nullif(btrim(coalesce(p_new_vehicle_id,'')),'') IS NULL OR
+  nullif(btrim(coalesce(p_assigned_by,'')),'') IS NULL THEN
+  RAISE EXCEPTION 'Tenant, employee, bike and operator are required';
+ END IF;
+ IF p_old_vehicle_id IS NOT NULL AND btrim(p_old_vehicle_id)<>'' THEN
+  IF p_old_vehicle_id=p_new_vehicle_id THEN
+   RAISE EXCEPTION 'Old bike and new bike cannot be the same';
+  END IF;
+  SELECT * INTO v_employee FROM public.employees
+  WHERE id=p_employee_id AND tenant_id=p_tenant_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Employee not found in tenant'; END IF;
+  SELECT * INTO v_old FROM public.vehicles
+   WHERE id=p_old_vehicle_id AND tenant_id=p_tenant_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Old bike not found in tenant'; END IF;
+  SELECT * INTO v_old_assignment FROM public.vehicle_assignments
+   WHERE tenant_id=p_tenant_id AND employee_id=v_employee.id AND vehicle_id=v_old.id
+   AND assignment_status='ACTIVE' AND return_date IS NULL FOR UPDATE;
+  IF NOT FOUND OR v_employee.current_bike_id IS DISTINCT FROM v_old.id
+     OR v_old.current_employee_id IS DISTINCT FROM v_employee.id THEN
+   RAISE EXCEPTION 'Old bike custody does not match the employee; no changes made';
+  END IF;
+  v_odo:=coalesce(p_return_odometer,v_old.current_odometer,v_old.odometer_km);
+  IF v_odo<coalesce(v_old.current_odometer,0) THEN
+   RAISE EXCEPTION 'Old bike return odometer cannot go backwards';
+  END IF;
+  UPDATE public.vehicle_assignments SET assignment_status='REPLACED',
+   return_date=v_day,return_time=v_clock,return_odometer=v_odo,
+   condition_on_return=coalesce(p_condition_on_return,'Good Condition'),
+   return_notes=coalesce(p_return_notes,'Replaced by new bike'),
+   returned_to=p_assigned_by
+  WHERE id=v_old_assignment.id AND tenant_id=p_tenant_id;
+  UPDATE public.vehicles SET status='AVAILABLE',current_status='Available',
+   current_employee_id=NULL,current_employee_name=NULL,current_odometer=v_odo,
+   updated_by=p_assigned_by,updated_at=v_at WHERE id=v_old.id AND tenant_id=p_tenant_id;
+  UPDATE public.employees SET current_bike_id=NULL,current_bike_plate=NULL,
+   updated_by=p_assigned_by,updated_at=v_at WHERE id=v_employee.id AND tenant_id=p_tenant_id;
+  INSERT INTO public.employee_timeline_events
+   (id,tenant_id,employee_id,event_type,event_category,title,description,performed_by,related_entity_type,related_entity_id)
+  VALUES(gen_random_uuid()::text,p_tenant_id,v_employee.id,'RETURN','FLEET','Old bike replaced',
+   'Replaced '||v_old.plate_number||' with '||p_new_vehicle_id,
+   p_assigned_by,'VEHICLE',v_old.id);
+ END IF;
+
+ v_response:=public.demo_assign_vehicle_atomic(
+  p_tenant_id,p_new_vehicle_id,p_employee_id,v_day,v_clock,p_new_starting_odometer,
+  p_new_condition,p_return_notes,p_assigned_by,v_confirm_force
+ );
+ RETURN v_response;
+END $function$
+;
+REVOKE ALL ON FUNCTION public.rpc_swap_vehicle(varchar,varchar,varchar,varchar,numeric,text,text,numeric,text,text,varchar,varchar,date,time without time zone) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_swap_vehicle(varchar,varchar,varchar,varchar,numeric,text,text,numeric,text,text,varchar,varchar,date,time without time zone) TO service_role;

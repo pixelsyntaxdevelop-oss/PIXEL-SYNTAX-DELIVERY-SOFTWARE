@@ -132,8 +132,11 @@ export async function assignVehicleAuthoritative(
   } = params;
 
   const now = new Date().toISOString();
-  const assignDate = assignmentDate || now.split('T')[0];
-  const assignTime = assignmentTime || (now.split('T')[1] ? now.split('T')[1].slice(0, 8) : '08:00:00');
+  // UAE does not observe daylight saving time; use its local clock for
+  // today's handover if the form did not specify an effective date/time.
+  const dubaiNow = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+  const assignDate = assignmentDate || dubaiNow.slice(0, 10);
+  const assignTime = assignmentTime || dubaiNow.slice(11, 19);
 
   // The isolated demo must NEVER use the legacy multi-statement fallback that
   // swallows Supabase insert errors and reports success despite partial custody.
@@ -184,6 +187,8 @@ export async function assignVehicleAuthoritative(
         p_replacement_reason: forceReassign ? 'CONFIRMED_FORCE_REASSIGN' : 'ASSIGN',
         p_assigned_by: resolveHumanAssignedBy(assignedBy, db),
         p_user_id: params.userId || params.assignedById || null,
+        p_assignment_date: assignDate,
+        p_assignment_time: assignTime,
       });
       if (error || !data?.success) {
         const reason = String(error?.message || data?.error || 'Atomic bike assignment failed');
