@@ -976,7 +976,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
               {Number.isFinite(metrics.payroll.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)}` : '—'}
             </div>
             {!Number.isFinite(metrics.payroll.totalAmount) && (
-              <span aria-hidden="true" className="hidden peer-focus-visible:block mt-2 text-xs font-semibold leading-snug text-sky-800 dark:text-sky-200">
+              <span aria-hidden="true" className="hidden peer-focus-visible:block mt-2 max-w-full rounded-md bg-sky-50 px-3 py-2 text-sm sm:text-xs font-semibold leading-relaxed sm:leading-snug break-words text-sky-900 dark:bg-sky-950/70 dark:text-sky-100">
                 {translations[lang].kpiCurrencyAmountUnavailable}
               </span>
             )}
@@ -1015,7 +1015,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
               {Number.isFinite(metrics.fines.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)}` : '—'}
             </div>
             {!Number.isFinite(metrics.fines.totalAmount) && (
-              <span aria-hidden="true" className="hidden peer-focus-visible:block mt-2 text-xs font-semibold leading-snug text-sky-800 dark:text-sky-200">
+              <span aria-hidden="true" className="hidden peer-focus-visible:block mt-2 max-w-full rounded-md bg-sky-50 px-3 py-2 text-sm sm:text-xs font-semibold leading-relaxed sm:leading-snug break-words text-sky-900 dark:bg-sky-950/70 dark:text-sky-100">
                 {translations[lang].kpiCurrencyAmountUnavailable}
               </span>
             )}
