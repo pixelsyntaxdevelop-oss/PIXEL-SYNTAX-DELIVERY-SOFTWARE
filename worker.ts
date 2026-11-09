@@ -6083,8 +6083,9 @@ export default {
           try {
             const { count, error } = await supabase
               .from('profiles')
-              .select('*', { count: 'exact', head: true })
-              .eq('tenant_id', 'company_pixel_syntax');
+              .select('id', { count: 'exact' })
+              .eq('tenant_id', 'company_pixel_syntax')
+              .limit(1);
             if (!error && typeof count === 'number') {
               userCount = count;
               isDbConnected = true;
@@ -6095,7 +6096,7 @@ export default {
                 : msg.includes('not found') ? 'GATEWAY_ROUTE_NOT_FOUND'
                 : msg.includes('fetch failed') ? 'GATEWAY_FETCH_FAILED'
                 : msg.includes('invalid api key') ? 'SUPABASE_KEY_REJECTED'
-                : 'POSTGREST_' + String(error.code || 'UNKNOWN').replace(/[^A-Z0-9_]/gi, '').slice(0,32);
+                : 'POSTGREST_' + String(error.code || 'UNKNOWN').replace(/[^A-Z0-9_]/gi, '').slice(0,32) + '_' + String(error.message || 'UNSPECIFIED').replace(/[^A-Z0-9_ ]/gi, '').slice(0,90);
             } else {
               databaseDiagnostic = 'COUNT_NOT_AVAILABLE';
             }
