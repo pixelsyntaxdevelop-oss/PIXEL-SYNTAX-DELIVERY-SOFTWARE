@@ -237,7 +237,9 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
     const next = openUnavailableCurrencyHint === hint ? null : hint;
     unavailableHintDismissedRef.current = !next;
     setOpenUnavailableCurrencyHint(next);
-    setUnavailableHintAnnouncement(`${translations[lang][hint === 'payroll' ? 'kpiHeadingPayroll' : 'kpiHeadingFines']}: ${translations[lang][next ? 'kpiCurrencyHintExpanded' : 'kpiCurrencyHintCollapsed']}`);
+    // aria-expanded already announces direct button toggles; avoid a second live-region message.
+    // Clear the previous dismissal message so the next outside dismissal can be announced.
+    setUnavailableHintAnnouncement('');
   };
 
   // Dismiss the touch explanation on outside pointer/focus interaction or Escape.
