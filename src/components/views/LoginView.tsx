@@ -12,7 +12,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { authService, AuthSessionData } from '../../services/authService';
-import { LoginBrandPanel } from '../common/LoginBrandPanel';
+
 import {
   getCachedBranding,
   setCachedBranding,
@@ -68,7 +68,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
 
   // Synchronously load last valid cached branding for instant first render (<300ms)
   const initialCache = getCachedBranding('company_pixel_syntax');
-  const [brandingLoading, setBrandingLoading] = useState<boolean>(false);
+  const [, setBrandingLoading] = useState<boolean>(false);
   const [branding, setBranding] = useState<TenantBrandingContext>(() => ({
     isPlatformDomain: false,
     tenantId: 'company_pixel_syntax',
@@ -83,7 +83,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
     customHero: true,
   }));
   const [canSetup, setCanSetup] = useState<boolean>(false);
-  const [logoImageError, setLogoImageError] = useState(false);
+
 
   // Form State
   const [identifier, setIdentifier] = useState('');
@@ -226,7 +226,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
           loginTagline: e.detail.loginTagline || prev.loginTagline,
           customHero: Boolean(nextHero),
         }));
-        setLogoImageError(false);
+
         setBrandingLoading(false);
       } else {
         refreshBranding();
@@ -368,7 +368,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
   };
 
   // Authoritative company title
-  const displayCompanyTitle = 'Pixel Syntax Delivery';
+
 
   return (
     <div
@@ -378,48 +378,25 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
       {/* Centered White Rounded Rectangle Container */}
       <div
         id="login-main-card"
-        className="w-full max-w-[940px] bg-white rounded-3xl shadow-xl border border-slate-200/80 p-5 sm:p-7 flex flex-col sm:flex-row gap-6 sm:gap-7 items-center justify-center overflow-hidden"
+        className="w-full max-w-[520px] bg-white rounded-3xl shadow-xl border border-slate-200/80 p-6 sm:p-9 flex flex-col items-center justify-center overflow-hidden"
       >
-        {/* SHARED LEFT PROMOTIONAL / HERO BRAND PANEL */}
-        <LoginBrandPanel
-          loginHeroUrl={branding.loginHeroUrl}
-          companyName={branding.companyName || displayCompanyTitle}
-          portalTitle={branding.portalTitle}
-          loginTagline={branding.loginTagline}
-          logoUrl={branding.logoUrl}
-          isLoading={brandingLoading}
-        />
-
+        {/* One approved brand mark above the sign-in form; remove duplicate hero logo. */}
         {/* RIGHT COLUMN: Sign-in form */}
         <div
           id="login-right-column"
-          className="w-full sm:flex-1 flex flex-col justify-center py-2 px-1 sm:px-3 bg-white"
+          className="w-full flex flex-col justify-center py-2 px-1 sm:px-3 bg-white"
         >
-          {/* Centered Company Logo, Title & Subtitle */}
-          <div className="text-center mb-6">
-            {!logoImageError && (
-              <div className="flex justify-center mb-3">
-                <img
-                  id="login-main-logo"
-                  src={branding.logoUrl || '/pixel-syntax-logo.webp'}
-                  alt=""
-                  aria-label={branding.companyName || displayCompanyTitle}
-                  referrerPolicy="no-referrer"
-                  className="h-12 max-w-[200px] object-contain"
-                  onError={() => {
-                    if (branding.logoUrl && branding.logoUrl !== '/pixel-syntax-logo.webp') {
-                      setBranding((prev) => ({ ...prev, logoUrl: '/pixel-syntax-logo.webp' }));
-                    } else {
-                      setLogoImageError(true);
-                    }
-                  }}
-                />
-              </div>
-            )}
-            <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight text-slate-900">
-              {branding.companyName || displayCompanyTitle}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          {/* A single full Pixel Syntax logo — proportional on desktop and mobile. */}
+          <div className="text-center mb-5">
+            <img
+              id="login-main-logo"
+              src="/pixel-syntax-logo.webp"
+              alt="Pixel Syntax"
+              width={240}
+              height={240}
+              className="w-[200px] h-[200px] sm:w-[240px] sm:h-[240px] mx-auto object-contain rounded-xl"
+            />
+            <p className="text-xs sm:text-sm text-slate-500 mt-3">
               Verify your identity to access the portal
             </p>
           </div>
