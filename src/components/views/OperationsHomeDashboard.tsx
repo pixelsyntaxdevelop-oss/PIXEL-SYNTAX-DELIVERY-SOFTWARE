@@ -241,19 +241,23 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   // Dismiss the touch explanation on outside pointer/focus interaction or Escape.
   useEffect(() => {
     if (!openUnavailableCurrencyHint) return;
+    const dismissHint = () => {
+      dismissHint();
+      setUnavailableHintAnnouncement(`${translations[lang][openUnavailableCurrencyHint === 'payroll' ? 'kpiHeadingPayroll' : 'kpiHeadingFines']}: ${translations[lang].kpiCurrencyHintCollapsed}`);
+    };
     const dismissOnOutsidePointer = (event: PointerEvent) => {
       if (event.target instanceof Element && event.target.closest('[data-unavailable-currency-hint]')) return;
-      setOpenUnavailableCurrencyHint(null);
+      dismissHint();
     };
     const dismissOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      setOpenUnavailableCurrencyHint(null);
+      dismissHint();
       // Keep keyboard users on the trigger that opened the explanation.
       document.querySelector<HTMLButtonElement>(`[data-unavailable-currency-trigger="${openUnavailableCurrencyHint}"]`)?.focus();
     };
     const dismissOnOutsideFocus = (event: FocusEvent) => {
       if (event.target instanceof Element && event.target.closest('[data-unavailable-currency-hint]')) return;
-      setOpenUnavailableCurrencyHint(null);
+      dismissHint();
     };
     document.addEventListener('pointerdown', dismissOnOutsidePointer);
     document.addEventListener('keydown', dismissOnEscape);
@@ -263,7 +267,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
       document.removeEventListener('keydown', dismissOnEscape);
       document.removeEventListener('focusin', dismissOnOutsideFocus);
     };
-  }, [openUnavailableCurrencyHint]);
+  }, [openUnavailableCurrencyHint, lang]);
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'HR' | 'FLEET' | 'OPERATIONS' | 'ACCOUNTS'>('ALL');
 
   // Live Metric State
