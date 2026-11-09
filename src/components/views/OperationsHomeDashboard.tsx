@@ -43,12 +43,13 @@ const formatKpiCurrencyAmount = (amount: number, lang: LanguageMode): string =>
 // Round to the same two decimals as the visual amount before splitting units.
 const formatKpiCurrencyForScreenReader = (amount: number, lang: LanguageMode): string => {
   if (!Number.isFinite(amount)) return `${formatKpiCurrencyAmount(amount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`;
-  const roundedFils = Math.round((amount + Number.EPSILON) * 100);
+  const roundedFils = Math.round((Math.abs(amount) + Number.EPSILON) * 100);
   const dirhams = Math.trunc(roundedFils / 100);
-  const fils = Math.abs(roundedFils % 100);
+  const fils = roundedFils % 100;
   const numberFormatter = new Intl.NumberFormat(lang === 'AR' ? 'ar-AE' : 'en-AE', { maximumFractionDigits: 0 });
   const whole = `${numberFormatter.format(dirhams)} ${translations[lang].kpiCurrencyAedAccessible}`;
-  return fils === 0 ? whole : `${whole} ${translations[lang].kpiCurrencyAmountAnd} ${numberFormatter.format(fils)} ${translations[lang].kpiCurrencyFilsAccessible}`;
+  const spokenAmount = fils === 0 ? whole : `${whole} ${translations[lang].kpiCurrencyAmountAnd} ${numberFormatter.format(fils)} ${translations[lang].kpiCurrencyFilsAccessible}`;
+  return amount < 0 && roundedFils !== 0 ? `${translations[lang].kpiCurrencyNegative} ${spokenAmount}` : spokenAmount;
 };
 
 // Localize known payroll month labels for display without changing API period values.
