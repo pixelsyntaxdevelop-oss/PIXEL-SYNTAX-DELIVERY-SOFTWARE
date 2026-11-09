@@ -15,6 +15,7 @@
 
 import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
+import { handleDemoPayrollWorkerRoutes } from './server/demoPayrollWorker';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AUTHORITATIVE_MASTER_EMPLOYEES } from './server/authoritativeEmployees';
 import {
@@ -2696,13 +2697,23 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
   }
 
   const empTimelineMatch = cleanPath.match(/^\/api\/erp\/master-employees\/([^/]+)\/timeline$/);
-  if (empTimelineMatch) {
-    return jsonResponse([]);
+  if (request.method === 'GET' && empTimelineMatch) {
+    const id = decodeURIComponent(empTimelineMatch[1]);
+    const { data, error } = await supabase.from('employee_timeline_events').select('*')
+      .eq('tenant_id', tenantId).eq('employee_id', id)
+      .order('created_at', { ascending: false }).limit(500);
+    if (error) return jsonResponse({ error: error.message }, 500);
+    return jsonResponse(data || []);
   }
 
   const empStatusHistMatch = cleanPath.match(/^\/api\/erp\/master-employees\/([^/]+)\/status-history$/);
-  if (empStatusHistMatch) {
-    return jsonResponse([]);
+  if (request.method === 'GET' && empStatusHistMatch) {
+    const id = decodeURIComponent(empStatusHistMatch[1]);
+    const { data, error } = await supabase.from('employee_status_history').select('*')
+      .eq('tenant_id', tenantId).eq('employee_id', id)
+      .order('effective_from', { ascending: false }).limit(500);
+    if (error) return jsonResponse({ error: error.message }, 500);
+    return jsonResponse(data || []);
   }
 
   const empAssignProjMatch = cleanPath.match(/^\/api\/erp\/master-employees\/([^/]+)\/assign-project$/);
@@ -2712,14 +2723,14 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
     const { projectId, startDate, employeeCodeOnProject, notes } = body;
     if (!projectId) return jsonResponse({ error: 'Project ID is required' }, 400);
 
-    let { data: emp } = await supabase.from('employees').select('*').eq('id', empId).maybeSingle();
+    let { data: emp } = await supabase.from('employees').select('*').eq('id', empId).eq('tenant_id', tenantId).maybeSingle();
     if (!emp) {
-      const { data: empByCode } = await supabase.from('employees').select('*').eq('employee_code', empId).maybeSingle();
+      const { data: empByCode } = await supabase.from('employees').select('*').eq('employee_code', empId).eq('tenant_id', tenantId).maybeSingle();
       emp = empByCode;
     }
     if (!emp) return jsonResponse({ error: 'Employee not found' }, 404);
 
-    let { data: proj } = await supabase.from('projects').select('*').eq('id', projectId).maybeSingle();
+    let { data: proj } = await supabase.from('projects').select('*').eq('id', projectId).eq('tenant_id', tenantId).maybeSingle();
     if (!proj) {
       proj = resolveAuthoritativeProject(projectId) as any;
       if (proj) {
@@ -2740,13 +2751,13 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
       end_reason: 'Reassigned to new project',
       ended_at: now,
       is_primary: false,
-    }).eq('employee_id', emp.id).eq('status', 'ACTIVE');
+    }).eq('tenant_id', tenantId).eq('employee_id', emp.id).eq('status', 'ACTIVE');
 
     const assignmentId = `epa_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const cleanExtId = employeeCodeOnProject ? String(employeeCodeOnProject).trim() : null;
     const newAssignment = {
       id: assignmentId,
-      tenant_id: 'company_pixel_syntax',
+      tenant_id: tenantId,
       employee_id: emp.id,
       employee_name: emp.full_name,
       employee_code: emp.employee_code,
@@ -2771,7 +2782,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
       project_code: proj.code,
       current_status: 'Assigned / Active',
       updated_at: now,
-    }).eq('id', emp.id).select().maybeSingle();
+    }).eq('id', emp.id).eq('tenant_id', tenantId).select().maybeSingle();
 
     if (empErr) return jsonResponse({ error: empErr.message }, 500);
     return jsonResponse({ success: true, employee: updatedEmp, assignment: newAssignment });
@@ -2784,14 +2795,14 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
     const { newProjectId, effectiveDate, transferReason, employeeCodeOnProject, notes } = body;
     if (!newProjectId) return jsonResponse({ error: 'New Project ID is required' }, 400);
 
-    let { data: emp } = await supabase.from('employees').select('*').eq('id', empId).maybeSingle();
+    let { data: emp } = await supabase.from('employees').select('*').eq('id', empId).eq('tenant_id', tenantId).maybeSingle();
     if (!emp) {
-      const { data: empByCode } = await supabase.from('employees').select('*').eq('employee_code', empId).maybeSingle();
+      const { data: empByCode } = await supabase.from('employees').select('*').eq('employee_code', empId).eq('tenant_id', tenantId).maybeSingle();
       emp = empByCode;
     }
     if (!emp) return jsonResponse({ error: 'Employee not found' }, 404);
 
-    let { data: newProj } = await supabase.from('projects').select('*').eq('id', newProjectId).maybeSingle();
+    let { data: newProj } = await supabase.from('projects').select('*').eq('id', newProjectId).eq('tenant_id', tenantId).maybeSingle();
     if (!newProj) {
       newProj = resolveAuthoritativeProject(newProjectId) as any;
       if (newProj) {
@@ -2812,13 +2823,13 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
       end_reason: transferReason || 'Project Transfer',
       ended_at: now,
       is_primary: false,
-    }).eq('employee_id', emp.id).eq('status', 'ACTIVE');
+    }).eq('tenant_id', tenantId).eq('employee_id', emp.id).eq('status', 'ACTIVE');
 
     const assignmentId = `epa_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const cleanExtId = employeeCodeOnProject ? String(employeeCodeOnProject).trim() : null;
     const newAssignment = {
       id: assignmentId,
-      tenant_id: 'company_pixel_syntax',
+      tenant_id: tenantId,
       employee_id: emp.id,
       employee_name: emp.full_name,
       employee_code: emp.employee_code,
@@ -2843,7 +2854,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
       project_code: newProj.code,
       current_status: 'Assigned / Active',
       updated_at: now,
-    }).eq('id', emp.id).select().maybeSingle();
+    }).eq('id', emp.id).eq('tenant_id', tenantId).select().maybeSingle();
 
     if (empErr) return jsonResponse({ error: empErr.message }, 500);
     return jsonResponse({ success: true, employee: updatedEmp, assignment: newAssignment });
@@ -2861,9 +2872,9 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
       return jsonResponse({ error: 'External Project Employee ID cannot be empty' }, 400);
     }
 
-    let { data: emp } = await supabase.from('employees').select('*').eq('id', empId).maybeSingle();
+    let { data: emp } = await supabase.from('employees').select('*').eq('id', empId).eq('tenant_id', tenantId).maybeSingle();
     if (!emp) {
-      const { data: empByCode } = await supabase.from('employees').select('*').eq('employee_code', empId).maybeSingle();
+      const { data: empByCode } = await supabase.from('employees').select('*').eq('employee_code', empId).eq('tenant_id', tenantId).maybeSingle();
       emp = empByCode;
     }
     if (!emp) return jsonResponse({ error: 'Employee not found' }, 404);
@@ -2902,7 +2913,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
 
     const { data: updatedEmp, error: empErr } = await supabase.from('employees').update({
       updated_at: now,
-    }).eq('id', emp.id).select().maybeSingle();
+    }).eq('id', emp.id).eq('tenant_id', tenantId).select().maybeSingle();
 
     if (empErr) return jsonResponse({ error: empErr.message }, 500);
 
@@ -2932,7 +2943,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
       end_reason: reason || 'Unassigned by operator',
       ended_at: now,
       is_primary: false,
-    }).eq('employee_id', emp.id).eq('status', 'ACTIVE');
+    }).eq('tenant_id', tenantId).eq('employee_id', emp.id).eq('status', 'ACTIVE');
 
     // Project custody is separate from employment lifecycle. Never reactivate an
     // exited/cancelled employee while clearing their project.
@@ -3156,11 +3167,16 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
 
     const now = new Date().toISOString();
     const { data: updatedEmp, error: empErr } = await supabase.from('employees').update({
-      current_status: status,
+      current_status: String(status).trim(),
+      status_reason: reason ? String(reason) : null,
+      status_effective_date: effectiveDate || now.slice(0, 10),
+      updated_by: 'Authenticated demo user',
       updated_at: now,
     }).eq('id', empId).eq('tenant_id', tenantId).select().maybeSingle();
 
     if (empErr) return jsonResponse({ error: empErr.message }, 500);
+    if (!updatedEmp) return jsonResponse({ error: 'Employee not found.' }, 404);
+    // Database trigger writes status and timeline history atomically.
     return jsonResponse({ success: true, employee: updatedEmp });
   }
 
@@ -3195,6 +3211,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
         ? (await supabase
             .from('employee_project_assignments')
             .select('*')
+            .eq('tenant_id', tenantId)
             .eq('employee_id', emp.id)
             .order('created_at', { ascending: false })).data
         : [];
@@ -3229,7 +3246,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
       const effectiveProjectId = emp.project_id || primaryAssignment?.project_id;
       if (effectiveProjectId) {
         const proj = supabase
-          ? (await supabase.from('projects').select('*').eq('id', effectiveProjectId).maybeSingle()).data
+          ? (await supabase.from('projects').select('*').eq('id', effectiveProjectId).eq('tenant_id', tenantId).maybeSingle()).data
           : null;
         currentProject = proj || { id: effectiveProjectId, name: emp.project_name || primaryAssignment?.project_name || 'Assigned Project' };
       }
@@ -3259,6 +3276,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
           ? (await supabase
               .from('vehicles')
               .select('*')
+              .eq('tenant_id', tenantId)
               .or(`id.eq.${emp.current_bike_id || 'none'},plate_number.eq.${emp.current_bike_plate || 'none'}`)
               .maybeSingle()).data
           : null;
@@ -3345,33 +3363,10 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
           dbSimAssignments.push(...asgns);
         }
 
-        // Also query by employee_code
-        if (emp.employee_code) {
-          const { data: asgnsByCode } = await supabase
-            .from('sim_assignments')
-            .select('*')
-            .eq('tenant_id', tenantId)
-            .eq('employee_code', String(emp.employee_code))
-            .order('created_at', { ascending: false });
-
-          if (Array.isArray(asgnsByCode)) {
-            for (const a of asgnsByCode) {
-              if (!dbSimAssignments.some((existing) => existing.id === a.id)) {
-                dbSimAssignments.push(a);
-              }
-            }
-          }
-        }
-
         // 2. Also cross-reference sim_cards table for cards associated with this employee
         const orCardClauses: string[] = [
           `current_employee_id.in.(${empIdsFilter.join(',')})`,
-          `last_employee_id.in.(${empIdsFilter.join(',')})`,
         ];
-        if (emp.employee_code) {
-          orCardClauses.push(`current_employee_code.eq.${emp.employee_code}`);
-          orCardClauses.push(`last_employee_code.eq.${emp.employee_code}`);
-        }
 
         const { data: matchedCards } = await supabase
           .from('sim_cards')
@@ -3582,14 +3577,25 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
         emp.current_sim_assigned_by = null;
       }
 
+      const [timelineRes, statusHistoryRes] = await Promise.all([
+        supabase.from('employee_timeline_events').select('*')
+          .eq('tenant_id', tenantId).eq('employee_id', emp.id)
+          .order('created_at', { ascending: false }).limit(500),
+        supabase.from('employee_status_history').select('*')
+          .eq('tenant_id', tenantId).eq('employee_id', emp.id)
+          .order('effective_from', { ascending: false }).limit(500),
+      ]);
+      if (timelineRes.error || statusHistoryRes.error) {
+        return jsonResponse({ error: 'Unable to retrieve employee history.' }, 503);
+      }
       return jsonResponse({
         employee: emp,
         currentProject,
         currentVehicle: currentVehicleObj,
         currentSim: currentSimObj,
         activeAssets: [],
-        timeline: [],
-        statusHistory: [],
+        timeline: timelineRes.data || [],
+        statusHistory: statusHistoryRes.data || [],
         projectHistory: assignmentsList.length > 0 ? assignmentsList : (emp.project_id ? [{
           id: `asg_${emp.id}`,
           project_id: emp.project_id,
@@ -5908,6 +5914,14 @@ export default {
           return jsonResponse({ error: 'Tenant mismatch.' }, 403);
         }
       }
+      // Demo payroll routes are isolated, authenticated, and database-backed.
+      if (cleanPath.startsWith('/api/v1/payroll/')) {
+        const database = getWorkerSupabaseClient(env);
+        if (!database) return jsonResponse({ error: 'Demo database is not configured.' }, 503);
+        const payrollResponse = await handleDemoPayrollWorkerRoutes(request, database, 'company_pixel_syntax');
+        if (payrollResponse) return payrollResponse;
+      }
+
       // GET /api/erp/storage/asset/:assetId (Cloudflare R2 storage serving)
       if (request.method === 'GET' && cleanPath.startsWith('/api/erp/storage/asset/')) {
         const assetId = cleanPath.split('/api/erp/storage/asset/')[1];
@@ -6680,7 +6694,7 @@ export default {
               end_reason: end_reason || 'Transferred to new project',
               ended_at: now,
               is_primary: false,
-            }).eq('employee_id', emp.id).eq('status', 'ACTIVE');
+            }).eq('tenant_id', tenantId).eq('employee_id', emp.id).eq('status', 'ACTIVE');
           }
 
           const assignmentId = `epa_${Date.now()}_${Math.floor(Math.random() * 1000)}`;

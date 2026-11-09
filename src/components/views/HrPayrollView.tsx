@@ -74,7 +74,10 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
   }, [initialTab]);
 
   // Selected Period
-  const [selectedPeriodKey, setSelectedPeriodKey] = useState<string>('2026-08');
+  const [selectedPeriodKey, setSelectedPeriodKey] = useState<string>(() => {
+    const today = new Date();
+    return String(today.getFullYear()) + '-' + String(today.getMonth() + 1).padStart(2, '0');
+  });
   const [periodData, setPeriodData] = useState<any>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [exceptions, setExceptions] = useState<any[]>([]);
@@ -470,6 +473,10 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
           </div>
         </div>
 
+        <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+          DEMO MODE — Salary records and slips are for testing only. No bank or WPS payments are sent.
+        </p>
+
         {/* Action Toolbar */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Month Selector */}
@@ -480,10 +487,13 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
               onChange={(e) => setSelectedPeriodKey(e.target.value)}
               className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2 rounded-xl focus:outline-none cursor-pointer"
             >
-              <option value="2026-08">August 2026</option>
-              <option value="2026-07">July 2026</option>
-              <option value="2026-06">June 2026</option>
-              <option value="2026-05">May 2026</option>
+              {Array.from({ length: 15 }, (_, i) => {
+                const date = new Date();
+                date.setDate(1);
+                date.setMonth(date.getMonth() - i);
+                const key = String(date.getFullYear()) + '-' + String(date.getMonth() + 1).padStart(2, '0');
+                return <option key={key} value={key}>{date.toLocaleDateString('en-AE', { month: 'long', year: 'numeric' })}</option>;
+              })}
             </select>
           </div>
 
@@ -524,15 +534,11 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
           </button>
 
           {/* WPS SIF Export */}
-          <a
-            href={periodData?.id ? `/api/v1/payroll/periods/${periodData.id}/sif` : '#'}
-            target="_blank"
-            rel="noreferrer"
-            className="px-3.5 py-2.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-700 dark:text-blue-300 font-bold rounded-2xl text-xs flex items-center gap-2 border border-blue-200 dark:border-blue-800/80 transition-colors"
-          >
+          <button type="button" disabled title="WPS file export requires bank format verification"
+            className="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl text-xs font-bold flex items-center gap-2 border border-slate-200 dark:border-slate-700 cursor-not-allowed">
             <Download className="w-4 h-4" />
-            <span>WPS SIF</span>
-          </a>
+            <span>WPS SIF — Unavailable</span>
+          </button>
         </div>
       </div>
 
