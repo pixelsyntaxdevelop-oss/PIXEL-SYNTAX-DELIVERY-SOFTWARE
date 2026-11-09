@@ -55,6 +55,8 @@ const kpiCurrencyUnit = (count: number, lang: LanguageMode, unit: 'Dirham' | 'Fi
 const formatKpiCurrencyForScreenReader = (amount: number, lang: LanguageMode): string => {
   if (!Number.isFinite(amount)) return `${formatKpiCurrencyAmount(amount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`;
   const roundedFils = Math.round((Math.abs(amount) + Number.EPSILON) * 100);
+  // Announce exact zero (including -0 and values rounded to 0.00) as a clear phrase.
+  if (roundedFils === 0) return translations[lang].kpiCurrencyZeroAmount;
   const dirhams = Math.trunc(roundedFils / 100);
   const fils = roundedFils % 100;
   const numberFormatter = new Intl.NumberFormat(lang === 'AR' ? 'ar-AE' : 'en-AE', { maximumFractionDigits: 0 });
