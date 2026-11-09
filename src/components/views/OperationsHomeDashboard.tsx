@@ -54,10 +54,13 @@ const kpiCurrencyUnit = (count: number, lang: LanguageMode, unit: 'Dirham' | 'Fi
 // Round to the same two decimals as the visual amount before splitting units.
 const formatKpiCurrencyForScreenReader = (amount: number, lang: LanguageMode): string => {
   if (!Number.isFinite(amount)) return `${formatKpiCurrencyAmount(amount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`;
-  // Above the safe fils-integer range, avoid multiplying into imprecise integers.
-  // Let Intl format the original large value at the same two-decimal precision.
+  // Large amounts cannot safely be converted to an integer fils count.
+  // Keep locale grouping and two-decimal precision, but speak the sign and
+  // currency unit explicitly instead of exposing a minus symbol or raw code.
   if (Math.abs(amount) > Number.MAX_SAFE_INTEGER / 100) {
-    return `${formatKpiCurrencyAmount(amount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`;
+    const absolute = Math.abs(amount);
+    const spoken = `${formatKpiCurrencyAmount(absolute, lang)} ${kpiCurrencyUnit(Math.trunc(absolute), lang, 'Dirham')}`;
+    return amount < 0 ? `${translations[lang].kpiCurrencyNegative} ${spoken}` : spoken;
   }
   const roundedFils = Math.round((Math.abs(amount) + Number.EPSILON) * 100);
   // Announce exact zero (including -0 and values rounded to 0.00) as a clear phrase.
