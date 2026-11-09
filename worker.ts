@@ -238,7 +238,15 @@ export function verifyPassword(plain: string, hash?: string, salt?: string): boo
  */
 function getWorkerSupabaseClient(env?: any): SupabaseClient | null {
   if (env?.supabase) return env.supabase;
+  if ((env as any)?.mockSupabase) return (env as any).mockSupabase;
+
+  // The demo uses a private Cloudflare-to-Supabase Edge gateway. The privileged
+  // database key remains inside Supabase and is never stored in the browser or GitHub.
+  const gatewayUrl = String(env?.ERP_DB_GATEWAY_URL || '').trim();
+  const gatewayToken = String(env?.ERP_DB_GATEWAY_TOKEN || '').trim();
+  const useGateway = Boolean(gatewayUrl && gatewayToken);
   const rawUrl =
+    env?.ERP_DATABASE_PUBLIC_URL ||
     env?.SUPABASE_URL ||
     env?.VITE_SUPABASE_URL ||
     (typeof process !== 'undefined' ? process.env?.SUPABASE_URL || process.env?.VITE_SUPABASE_URL : '') ||
@@ -248,7 +256,7 @@ function getWorkerSupabaseClient(env?: any): SupabaseClient | null {
     env?.SUPABASE_KEY ||
     env?.VITE_SUPABASE_ANON_KEY ||
     (typeof process !== 'undefined' ? process.env?.SUPABASE_SERVICE_ROLE_KEY || process.env?.VITE_SUPABASE_ANON_KEY : '') ||
-    '';
+    (useGateway ? 'server-gateway-transport-only' : '');
 
   const isConfigured = Boolean(
     rawUrl &&
@@ -258,17 +266,35 @@ function getWorkerSupabaseClient(env?: any): SupabaseClient | null {
     rawKey !== 'your-supabase-service-role-key' &&
     rawKey !== 'your-supabase-anon-key'
   );
-
-  if ((env as any)?.mockSupabase) return (env as any).mockSupabase;
-
   if (!isConfigured) return null;
 
   try {
-    return createClient(rawUrl, rawKey, {
-      auth: { persistSession: false },
-    });
+    if (useGateway) {
+      const expectedOrigin = new URL(rawUrl).origin;
+      return createClient(rawUrl, rawKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: {
+          fetch: async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+            const original = new URL(
+              typeof input === 'string' ? input : input instanceof Request ? input.url : String(input)
+            );
+            if (original.origin !== expectedOrigin || !original.pathname.startsWith('/rest/v1/')) {
+              throw new Error('Refused unexpected database gateway request');
+            }
+            const target = new URL(gatewayUrl.replace(/\/+$/, '') + original.pathname + original.search);
+            const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
+            // Remove dummy SDK client headers. Only the private gateway token grants access.
+            headers.delete('authorization');
+            headers.delete('apikey');
+            headers.set('x-erp-db-gateway-token', gatewayToken);
+            return fetch(target.toString(), { ...init, headers, redirect: 'error' });
+          },
+        },
+      });
+    }
+    return createClient(rawUrl, rawKey, { auth: { persistSession: false } });
   } catch (err) {
-    console.error('❌ Failed to initialize Supabase client in Worker:', err);
+    console.error('Failed to initialize demo Supabase transport:', err);
     return null;
   }
 }

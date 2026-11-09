@@ -4,6 +4,11 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 keep_vars = true
 
+# These are public service URLs; the only gateway credential lives in a Worker secret.
+[vars]
+ERP_DATABASE_PUBLIC_URL = "https://fevwkppueiwfokslwqji.supabase.co"
+ERP_DB_GATEWAY_URL = "https://fevwkppueiwfokslwqji.supabase.co/functions/v1/pixel-erp-db-gateway"
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
