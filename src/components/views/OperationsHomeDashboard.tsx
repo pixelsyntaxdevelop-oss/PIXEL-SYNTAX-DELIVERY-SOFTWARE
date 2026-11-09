@@ -230,10 +230,12 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   const [openKpiHelp, setOpenKpiHelp] = useState<string | null>(null);
   const [openUnavailableCurrencyHint, setOpenUnavailableCurrencyHint] = useState<'payroll' | 'fines' | null>(null);
   const [unavailableHintAnnouncement, setUnavailableHintAnnouncement] = useState('');
+  const unavailableHintDismissedRef = useRef(false);
 
   // Announce expanded/collapsed state changes without repeating the hint text.
   const toggleUnavailableCurrencyHint = (hint: 'payroll' | 'fines') => {
     const next = openUnavailableCurrencyHint === hint ? null : hint;
+    unavailableHintDismissedRef.current = !next;
     setOpenUnavailableCurrencyHint(next);
     setUnavailableHintAnnouncement(`${translations[lang][hint === 'payroll' ? 'kpiHeadingPayroll' : 'kpiHeadingFines']}: ${translations[lang][next ? 'kpiCurrencyHintExpanded' : 'kpiCurrencyHintCollapsed']}`);
   };
@@ -242,6 +244,9 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   useEffect(() => {
     if (!openUnavailableCurrencyHint) return;
     const dismissHint = () => {
+      // pointerdown can be followed by focusin; announce this dismissal only once.
+      if (unavailableHintDismissedRef.current) return;
+      unavailableHintDismissedRef.current = true;
       setOpenUnavailableCurrencyHint(null);
       setUnavailableHintAnnouncement(`${translations[lang][openUnavailableCurrencyHint === 'payroll' ? 'kpiHeadingPayroll' : 'kpiHeadingFines']}: ${translations[lang].kpiCurrencyHintCollapsed}`);
     };
