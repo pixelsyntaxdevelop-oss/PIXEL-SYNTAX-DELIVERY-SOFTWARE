@@ -230,7 +230,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   const [openKpiHelp, setOpenKpiHelp] = useState<string | null>(null);
   const [openUnavailableCurrencyHint, setOpenUnavailableCurrencyHint] = useState<'payroll' | 'fines' | null>(null);
 
-  // Dismiss the touch explanation on outside interaction or Escape.
+  // Dismiss the touch explanation on outside pointer/focus interaction or Escape.
   useEffect(() => {
     if (!openUnavailableCurrencyHint) return;
     const dismissOnOutsidePointer = (event: PointerEvent) => {
@@ -243,11 +243,17 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
       // Keep keyboard users on the trigger that opened the explanation.
       document.querySelector<HTMLButtonElement>(`[data-unavailable-currency-trigger="${openUnavailableCurrencyHint}"]`)?.focus();
     };
+    const dismissOnOutsideFocus = (event: FocusEvent) => {
+      if (event.target instanceof Element && event.target.closest('[data-unavailable-currency-hint]')) return;
+      setOpenUnavailableCurrencyHint(null);
+    };
     document.addEventListener('pointerdown', dismissOnOutsidePointer);
     document.addEventListener('keydown', dismissOnEscape);
+    document.addEventListener('focusin', dismissOnOutsideFocus);
     return () => {
       document.removeEventListener('pointerdown', dismissOnOutsidePointer);
       document.removeEventListener('keydown', dismissOnEscape);
+      document.removeEventListener('focusin', dismissOnOutsideFocus);
     };
   }, [openUnavailableCurrencyHint]);
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'HR' | 'FLEET' | 'OPERATIONS' | 'ACCOUNTS'>('ALL');
