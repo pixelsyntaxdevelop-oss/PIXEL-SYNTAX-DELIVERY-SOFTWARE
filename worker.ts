@@ -5860,6 +5860,28 @@ export default {
     // 3. API Route Handling (Guaranteed to execute BEFORE static assets)
     // CRITICAL: All /api/* routes MUST terminate in this block and are NEVER passed to env.ASSETS
     if (cleanPath.startsWith('/api/') || cleanPath === '/api') {
+      // The demo Worker uses a server-side Supabase role. Do not permit anonymous
+      // access to operational data, even when a nested handler lacks its own check.
+      const isPublicApi = cleanPath === '/api/health' ||
+        cleanPath.startsWith('/api/auth/') ||
+        cleanPath.startsWith('/api/platform-admin/');
+      if (!isPublicApi) {
+        const token = extractTokenFromWebRequest(request);
+        if (!token) return jsonResponse({ error: 'Authentication required.' }, 401);
+        const db = getWorkerSupabaseClient(env);
+        if (!db) return jsonResponse({ error: 'Demo database is not configured.' }, 503);
+        const session = await getSessionAsync(token, db);
+        if (!session) return jsonResponse({ error: 'Session expired or invalid.' }, 401);
+        if (session.tenantId !== 'company_pixel_syntax') {
+          return jsonResponse({ error: 'Not authorized for this demo tenant.' }, 403);
+        }
+        const requestedTenant = request.headers.get('x-tenant-id') ||
+          request.headers.get('tenant-id') ||
+          url.searchParams.get('tenant_id') || url.searchParams.get('tenantId');
+        if (requestedTenant && requestedTenant !== session.tenantId) {
+          return jsonResponse({ error: 'Tenant mismatch.' }, 403);
+        }
+      }
       // GET /api/erp/storage/asset/:assetId (Cloudflare R2 storage serving)
       if (request.method === 'GET' && cleanPath.startsWith('/api/erp/storage/asset/')) {
         const assetId = cleanPath.split('/api/erp/storage/asset/')[1];
