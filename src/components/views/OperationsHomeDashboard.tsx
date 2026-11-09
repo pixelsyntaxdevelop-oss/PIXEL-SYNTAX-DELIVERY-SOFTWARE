@@ -242,7 +242,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   useEffect(() => {
     if (!openUnavailableCurrencyHint) return;
     const dismissHint = () => {
-      dismissHint();
+      setOpenUnavailableCurrencyHint(null);
       setUnavailableHintAnnouncement(`${translations[lang][openUnavailableCurrencyHint === 'payroll' ? 'kpiHeadingPayroll' : 'kpiHeadingFines']}: ${translations[lang].kpiCurrencyHintCollapsed}`);
     };
     const dismissOnOutsidePointer = (event: PointerEvent) => {
