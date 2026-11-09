@@ -6078,9 +6078,10 @@ export default {
         const supabase = getWorkerSupabaseClient(env);
         let userCount = 0;
         let isDbConnected = false;
-        let databaseDiagnostic = supabase ? 'QUERY_FAILED' : 'CLIENT_NOT_INITIALIZED';
         if (supabase) {
           try {
+            // A bounded GET query is supported reliably through the Worker-to-Edge
+            // gateway; the HEAD-only count request was not portable across runtimes.
             const { count, error } = await supabase
               .from('profiles')
               .select('id', { count: 'exact' })
@@ -6089,27 +6090,14 @@ export default {
             if (!error && typeof count === 'number') {
               userCount = count;
               isDbConnected = true;
-              databaseDiagnostic = 'CONNECTED';
-            } else if (error) {
-              const msg = String(error.message || '').toLowerCase();
-              databaseDiagnostic = msg.includes('unauthorized') ? 'GATEWAY_UNAUTHORIZED'
-                : msg.includes('not found') ? 'GATEWAY_ROUTE_NOT_FOUND'
-                : msg.includes('fetch failed') ? 'GATEWAY_FETCH_FAILED'
-                : msg.includes('invalid api key') ? 'SUPABASE_KEY_REJECTED'
-                : 'POSTGREST_' + String(error.code || 'UNKNOWN').replace(/[^A-Z0-9_]/gi, '').slice(0,32) + '_' + String(error.message || 'UNSPECIFIED').replace(/[^A-Z0-9_ ]/gi, '').slice(0,90);
-            } else {
-              databaseDiagnostic = 'COUNT_NOT_AVAILABLE';
             }
-          } catch {
-            databaseDiagnostic = 'GATEWAY_REQUEST_EXCEPTION';
-          }
+          } catch {}
         }
         return jsonResponse({
           isFirstUserRequired: false,
           hasUsers: userCount > 0,
           userCount,
           databaseConnected: isDbConnected,
-          databaseDiagnostic,
           status: 'ACTIVE',
         });
       }
