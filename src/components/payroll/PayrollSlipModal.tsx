@@ -44,7 +44,7 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Official UAE Employee Salary Slip"
+      title="Pixel Syntax Demo Salary Slip"
     >
       <div className="space-y-5 text-slate-900 dark:text-white max-w-2xl">
         {/* Printable Payslip Card */}
@@ -53,18 +53,18 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
           <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
-                Allied Delivery & Fleet Operations L.L.C.
+                Pixel Syntax Delivery Software — DEMO
               </span>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
                 Monthly Compensation & Salary Slip
               </h3>
               <p className="text-[11px] text-slate-400">
-                P.O. Box 45000, Business Bay, Dubai, UAE • TRN: 100459200300003
+                Sample payroll preview • Not a tax invoice or proof of payment
               </p>
             </div>
             <div className="text-right">
               <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono text-xs font-black rounded-xl inline-block">
-                {activePeriod || record.period_month || 'August 2026'}
+                {activePeriod || record.period_month || new Date().toISOString().slice(0, 7)}
               </span>
               <span className="text-[10px] text-slate-400 block mt-1">
                 Ref: {record.id || `PAY-${record.employee_code}`}
@@ -95,7 +95,7 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
             <div>
               <span className="text-[10px] text-slate-400 block">Bank & IBAN</span>
               <span className="font-mono font-semibold text-slate-700 dark:text-slate-300 truncate block">
-                {record.iban || 'AE29033000001234567'}
+                {record.iban || 'Not provided'}
               </span>
             </div>
           </div>
@@ -291,10 +291,10 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
           <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
             <div>
               <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 block uppercase tracking-wider">
-                Total Net Disbursal
+                Net Salary — DEMO PREVIEW
               </span>
               <span className="text-[10px] text-emerald-700 dark:text-emerald-400">
-                Processed via UAE Central Bank WPS SIF • {record.status}
+                No bank transfer or WPS file has been processed • {record.status}
               </span>
             </div>
             <div className="text-right">
