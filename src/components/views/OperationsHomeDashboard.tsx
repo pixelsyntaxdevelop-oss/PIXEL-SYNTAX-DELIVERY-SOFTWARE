@@ -229,6 +229,17 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
   const [hasLoadedSuccessfully, setHasLoadedSuccessfully] = useState(false);
   const [openKpiHelp, setOpenKpiHelp] = useState<string | null>(null);
   const [openUnavailableCurrencyHint, setOpenUnavailableCurrencyHint] = useState<'payroll' | 'fines' | null>(null);
+
+  // Dismiss the touch explanation when the user taps elsewhere on the page.
+  useEffect(() => {
+    if (!openUnavailableCurrencyHint) return;
+    const dismissOnOutsidePointer = (event: PointerEvent) => {
+      if (event.target instanceof Element && event.target.closest('[data-unavailable-currency-hint]')) return;
+      setOpenUnavailableCurrencyHint(null);
+    };
+    document.addEventListener('pointerdown', dismissOnOutsidePointer);
+    return () => document.removeEventListener('pointerdown', dismissOnOutsidePointer);
+  }, [openUnavailableCurrencyHint]);
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'HR' | 'FLEET' | 'OPERATIONS' | 'ACCOUNTS'>('ALL');
 
   // Live Metric State
@@ -977,12 +988,12 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
               {Number.isFinite(metrics.payroll.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.payroll.totalAmount, lang)}` : '—'}
             </div>
             {!Number.isFinite(metrics.payroll.totalAmount) && (
-              <button type="button" className="mt-2 flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-sky-800 underline underline-offset-2 touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 dark:text-sky-200 dark:focus-visible:outline-sky-300 sm:hidden" aria-expanded={openUnavailableCurrencyHint === 'payroll'} aria-controls="kpi-unavailable-payroll" onClick={() => setOpenUnavailableCurrencyHint(openUnavailableCurrencyHint === 'payroll' ? null : 'payroll')}>
+              <button type="button" data-unavailable-currency-hint className="mt-2 flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-sky-800 underline underline-offset-2 touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 dark:text-sky-200 dark:focus-visible:outline-sky-300 sm:hidden" aria-expanded={openUnavailableCurrencyHint === 'payroll'} aria-controls="kpi-unavailable-payroll" onClick={() => setOpenUnavailableCurrencyHint(openUnavailableCurrencyHint === 'payroll' ? null : 'payroll')}>
                 <Info className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />{translations[lang].kpiCurrencyAmountUnavailable}
               </button>
             )}
             {!Number.isFinite(metrics.payroll.totalAmount) && (
-              <span id="kpi-unavailable-payroll" aria-hidden="true" className={`${openUnavailableCurrencyHint === 'payroll' ? 'block' : 'hidden'} peer-focus-visible:block mt-2 max-w-full rounded-md bg-sky-50 px-3 py-2 text-sm sm:text-xs font-semibold leading-relaxed sm:leading-snug break-words text-sky-900 dark:bg-sky-950/70 dark:text-sky-100`}>
+              <span id="kpi-unavailable-payroll" data-unavailable-currency-hint aria-hidden="true" className={`${openUnavailableCurrencyHint === 'payroll' ? 'block' : 'hidden'} peer-focus-visible:block mt-2 max-w-full rounded-md bg-sky-50 px-3 py-2 text-sm sm:text-xs font-semibold leading-relaxed sm:leading-snug break-words text-sky-900 dark:bg-sky-950/70 dark:text-sky-100`}>
                 {translations[lang].kpiCurrencyAmountUnavailable}
               </span>
             )}
@@ -1021,12 +1032,12 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
               {Number.isFinite(metrics.fines.totalAmount) ? `${translations[lang].kpiCurrencyAed} ${formatKpiCurrencyAmount(metrics.fines.totalAmount, lang)}` : '—'}
             </div>
             {!Number.isFinite(metrics.fines.totalAmount) && (
-              <button type="button" className="mt-2 flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-sky-800 underline underline-offset-2 touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 dark:text-sky-200 dark:focus-visible:outline-sky-300 sm:hidden" aria-expanded={openUnavailableCurrencyHint === 'fines'} aria-controls="kpi-unavailable-fines" onClick={() => setOpenUnavailableCurrencyHint(openUnavailableCurrencyHint === 'fines' ? null : 'fines')}>
+              <button type="button" data-unavailable-currency-hint className="mt-2 flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-sky-800 underline underline-offset-2 touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 dark:text-sky-200 dark:focus-visible:outline-sky-300 sm:hidden" aria-expanded={openUnavailableCurrencyHint === 'fines'} aria-controls="kpi-unavailable-fines" onClick={() => setOpenUnavailableCurrencyHint(openUnavailableCurrencyHint === 'fines' ? null : 'fines')}>
                 <Info className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />{translations[lang].kpiCurrencyAmountUnavailable}
               </button>
             )}
             {!Number.isFinite(metrics.fines.totalAmount) && (
-              <span id="kpi-unavailable-fines" aria-hidden="true" className={`${openUnavailableCurrencyHint === 'fines' ? 'block' : 'hidden'} peer-focus-visible:block mt-2 max-w-full rounded-md bg-sky-50 px-3 py-2 text-sm sm:text-xs font-semibold leading-relaxed sm:leading-snug break-words text-sky-900 dark:bg-sky-950/70 dark:text-sky-100`}>
+              <span id="kpi-unavailable-fines" data-unavailable-currency-hint aria-hidden="true" className={`${openUnavailableCurrencyHint === 'fines' ? 'block' : 'hidden'} peer-focus-visible:block mt-2 max-w-full rounded-md bg-sky-50 px-3 py-2 text-sm sm:text-xs font-semibold leading-relaxed sm:leading-snug break-words text-sky-900 dark:bg-sky-950/70 dark:text-sky-100`}>
                 {translations[lang].kpiCurrencyAmountUnavailable}
               </span>
             )}
