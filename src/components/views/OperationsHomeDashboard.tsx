@@ -61,7 +61,12 @@ const formatKpiCurrencyForScreenReader = (amount: number, lang: LanguageMode): s
   const fils = roundedFils % 100;
   const numberFormatter = new Intl.NumberFormat(lang === 'AR' ? 'ar-AE' : 'en-AE', { maximumFractionDigits: 0 });
   const whole = `${numberFormatter.format(dirhams)} ${kpiCurrencyUnit(dirhams, lang, 'Dirham')}`;
-  const spokenAmount = fils === 0 ? whole : `${whole} ${translations[lang].kpiCurrencyAmountAnd} ${numberFormatter.format(fils)} ${kpiCurrencyUnit(fils, lang, 'Fils')}`;
+  // Avoid announcing a redundant zero-dirham portion for amounts below one dirham.
+  const spokenAmount = dirhams === 0
+    ? `${numberFormatter.format(fils)} ${kpiCurrencyUnit(fils, lang, 'Fils')}`
+    : fils === 0
+      ? whole
+      : `${whole} ${translations[lang].kpiCurrencyAmountAnd} ${numberFormatter.format(fils)} ${kpiCurrencyUnit(fils, lang, 'Fils')}`;
   return amount < 0 && roundedFils !== 0 ? `${translations[lang].kpiCurrencyNegative} ${spokenAmount}` : spokenAmount;
 };
 
