@@ -191,7 +191,8 @@ const ROLE_PERMISSIONS: Record<string, Record<string, Record<string, boolean>>> 
 };
 
 // Strictly isolated non-production demo tenant credentials (never used for company_pixel_syntax)
-const DEMO_TENANT_ID = 'company_pixel_syntax';
+// The isolated legacy preview identity must never intercept real Pixel Syntax demo database logins.
+const DEMO_TENANT_ID = 'company_demo';
 const DEMO_USER = { id: 'pixel_demo_admin', tenantId: DEMO_TENANT_ID, companyName: 'Pixel Syntax Delivery Software Demo', username: 'pixel_admin', fullName: 'Pixel Syntax Demo Admin', email: '', phone: '', role: 'COMPANY_ADMIN', roleDisplayName: 'Company Administrator', designation: 'Demo Admin', status: 'INVITED', isOwner: true, isSuperAdmin: false, allowedModules: ['ALL'], assignedBranchIds: [], assignedDepartmentIds: [], mustChangePassword: true, passwordHash: '', salt: '' };
 
 // Authoritative persistent ERP users migration record (used to verify exact hash/salt migration & profile_id linkage)
