@@ -54,6 +54,11 @@ const kpiCurrencyUnit = (count: number, lang: LanguageMode, unit: 'Dirham' | 'Fi
 // Round to the same two decimals as the visual amount before splitting units.
 const formatKpiCurrencyForScreenReader = (amount: number, lang: LanguageMode): string => {
   if (!Number.isFinite(amount)) return `${formatKpiCurrencyAmount(amount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`;
+  // Above the safe fils-integer range, avoid multiplying into imprecise integers.
+  // Let Intl format the original large value at the same two-decimal precision.
+  if (Math.abs(amount) > Number.MAX_SAFE_INTEGER / 100) {
+    return `${formatKpiCurrencyAmount(amount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`;
+  }
   const roundedFils = Math.round((Math.abs(amount) + Number.EPSILON) * 100);
   // Announce exact zero (including -0 and values rounded to 0.00) as a clear phrase.
   if (roundedFils === 0) return translations[lang].kpiCurrencyZeroAmount;
