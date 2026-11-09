@@ -53,7 +53,8 @@ const kpiCurrencyUnit = (count: number, lang: LanguageMode, unit: 'Dirham' | 'Fi
 // Spell out whole dirhams and fractional fils for assistive technology.
 // Round to the same two decimals as the visual amount before splitting units.
 const formatKpiCurrencyForScreenReader = (amount: number, lang: LanguageMode): string => {
-  if (!Number.isFinite(amount)) return `${formatKpiCurrencyAmount(amount, lang)} ${translations[lang].kpiCurrencyAedAccessible}`;
+  // Do not announce NaN or Infinity as monetary values to screen-reader users.
+  if (!Number.isFinite(amount)) return translations[lang].kpiCurrencyAmountUnavailable;
   // Large amounts cannot safely be converted to an integer fils count.
   // Keep locale grouping and two-decimal precision, but speak the sign and
   // currency unit explicitly instead of exposing a minus symbol or raw code.
