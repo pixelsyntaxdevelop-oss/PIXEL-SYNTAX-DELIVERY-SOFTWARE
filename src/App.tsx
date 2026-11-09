@@ -1478,7 +1478,7 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen font-sans flex ${
+      className={`w-full min-w-0 h-[100dvh] overflow-hidden font-sans flex ${
         theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'
       } ${lang === 'AR' ? 'dir-rtl' : 'dir-ltr'}`}
     >
@@ -1493,7 +1493,7 @@ export default function App() {
       />
 
       {/* Main Content Container */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden h-[100dvh]">
         {/* ALLIED Top Header Bar */}
         <Header
           userRole={currentUser.role}
@@ -1518,14 +1518,14 @@ export default function App() {
         />
 
         {/* Dashboard Main View Container */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+        <main id="erp-main-content" className="erp-responsive-content flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 pb-safe" tabIndex={-1}>
           <ErrorBoundary fallbackTitle="Module View Error" fallbackMessage="This module encountered an issue while loading. You can retry or return to the main dashboard without losing your ERP session.">
             {renderMainView()}
           </ErrorBoundary>
         </main>
 
         {/* Footer Info Bar */}
-        <footer className="h-10 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-3 sm:px-6 lg:px-8 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-medium shrink-0 transition-colors pb-safe">
+        <footer className="min-h-10 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-medium shrink-0 transition-colors pb-safe">
           <div className="flex gap-2 sm:gap-6 truncate">
             <span className="truncate">Pixel Syntax Delivery Software</span>
             <span className="hidden sm:inline">Logged: @{currentUser.username}</span>

@@ -253,7 +253,7 @@ export const Header: React.FC<HeaderProps> = ({
     searchResults.projects.length;
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-1 px-2 sm:px-6 shrink-0 sticky top-0 z-30 shadow-xs">
+    <header className="h-14 sm:h-16 min-w-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-1 px-2 sm:px-6 shrink-0 sticky top-0 z-30 shadow-xs">
       {/* Mobile Expandable Search Bar Overlay */}
       {isMobileSearchExpanded && (
         <div className="absolute inset-0 bg-white dark:bg-slate-900 z-50 flex items-center min-w-0 px-2 sm:px-3 gap-1.5 sm:gap-2 border-b border-slate-200 dark:border-slate-800">
@@ -556,7 +556,7 @@ export const Header: React.FC<HeaderProps> = ({
       )}
 
       {/* Right: Tenant Company & Status Badges, Icons & User Profile */}
-      <div className="flex items-center gap-0.5 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-0 sm:gap-2.5 shrink-0>
         {/* Mobile Search Icon Toggle */}
         <button
           onClick={() => {
@@ -572,7 +572,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* TENANT WORKSPACE BADGE */}
         <button
           onClick={onOpenUserSwitcher}
-          className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-md text-xs font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-750 transition-colors"
+          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-md text-xs font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-750 transition-colors"
           title="Click to Switch Multi-Tenant Workspace or User Account"
         >
           <Building className="w-3.5 h-3.5 text-slate-500" />
@@ -600,7 +600,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Theme Toggle (Sun/Moon) */}
         <button
           onClick={onToggleTheme}
-          className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          className="hidden sm:flex p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {isDark ? <Sun className="w-4.5 h-4.5 text-amber-400" /> : <Sun className="w-4.5 h-4.5 text-amber-500" />}
@@ -620,8 +620,8 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Settings Gear */}
         <button
-          onClick={onOpenAiCopilot}
-          className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          onClick={() => onNavigateModule?.("sys_configuration")}
+          className="hidden md:flex p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           title="System Configuration"
         >
           <Settings className="w-4.5 h-4.5 text-slate-500" />
@@ -655,7 +655,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Account Dropdown Menu */}
           {isAccountMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 p-2 space-y-2 animate-in fade-in zoom-in-95">
+            <div className="absolute right-0 top-full mt-2 w-[min(18rem,calc(100vw-1rem))] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 p-2 space-y-2 animate-in fade-in zoom-in-95">
               {/* Authenticated Staff Header */}
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
                 <div className="flex items-center gap-2.5">
@@ -686,6 +686,24 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
 
+              {/* Mobile controls remain accessible in the account menu. */}
+              <div className="sm:hidden space-y-1">
+                {onToggleTheme && (
+                  <button type="button" onClick={() => { setIsAccountMenuOpen(false); onToggleTheme(); }}
+                    className="w-full min-h-11 text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2.5">
+                    {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    <span>{isDark ? 'Light appearance' : 'Dark appearance'}</span>
+                  </button>
+                )}
+                {onOpenAiCopilot && (
+                  <button type="button" onClick={() => { setIsAccountMenuOpen(false); onOpenAiCopilot(); }}
+                    className="w-full min-h-11 text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2.5">
+                    <Sparkles className="h-4 w-4 text-blue-600" />
+                    <span>AI Assistant</span>
+                  </button>
+                )}
+              </div>
+
               {/* Navigation Links */}
               <div className="space-y-1">
                 {onOpenUserSwitcher && (
@@ -694,7 +712,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setIsAccountMenuOpen(false);
                       onOpenUserSwitcher();
                     }}
-                    className="md:hidden w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors flex items-center gap-2.5"
+                    className="xl:hidden w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors flex items-center gap-2.5"
                   >
                     <Building className="w-4 h-4 text-slate-500" />
                     <span className="truncate">Switch Tenant: {activeTenantName}</span>

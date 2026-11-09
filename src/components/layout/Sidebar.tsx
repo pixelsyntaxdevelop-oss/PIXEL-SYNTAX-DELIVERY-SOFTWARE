@@ -76,6 +76,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const selectedMod = activeModule || currentModule || 'doc_expiry_listing';
   const [searchFilter, setSearchFilter] = useState('');
 
+  // Lock background scrolling only while the mobile/tablet drawer is open.
+  useEffect(() => {
+    if (!isMobileOpen || typeof window === 'undefined' || !window.matchMedia('(max-width: 1023px)').matches) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [isMobileOpen]);
+
   // Allow keyboard users to dismiss the mobile navigation drawer.
   useEffect(() => {
     if (!isMobileOpen || !onCloseMobile) return;
@@ -250,20 +258,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <aside
         aria-label="Main navigation"
-        className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-30 flex flex-col h-[100dvh] lg:h-screen bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800 transition-transform duration-200 shrink-0 select-none ${
+        className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-30 flex flex-col h-[100dvh] lg:h-[100dvh] bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800 transition-transform duration-200 shrink-0 select-none ${
           isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
-        } ${collapsed ? 'w-[85vw] max-w-[300px] lg:w-16' : 'w-[85vw] max-w-[300px] lg:w-72'}`}
+        } ${collapsed ? 'w-[min(88vw,340px)] lg:w-16' : 'w-[min(88vw,340px)] lg:w-72'}`}
       >
         {/* Top Header inside Sidebar with Mobile Close Button */}
         <div className="flex items-center justify-between p-3 border-b border-slate-100 dark:border-slate-800/80 pt-safe">
           {!collapsed ? (
-            <div className="relative flex-1 mr-2">
+            <div className="relative flex-1 min-w-0 mr-2">
               <input
                 type="text"
                 placeholder="Filter menu..."
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 text-xs px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:border-blue-500 placeholder-slate-400"
+                className="w-full bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 text-base lg:text-xs px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:border-blue-500 placeholder-slate-400"
               />
             </div>
           ) : null}
@@ -282,7 +290,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
       {/* Navigation List */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-3 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700" style={{ WebkitOverflowScrolling: "touch" }}>
         {menuSections.map((sec, secIdx) => {
           // First filter items by currentUser module permissions
           const permittedItems = sec.items.filter((item) => {
@@ -333,15 +341,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       onClick={() => {
                         if (hasSubItems) {
+                          // Expand on phone/tablet without closing the drawer.
                           toggleExpand(item.id);
-                          // Select first child if clicking parent
-                          if (item.subItems && item.subItems[0]) {
-                            handleSelectModule(item.subItems[0].id as NavigationModule);
-                          }
                         } else {
                           handleSelectModule(item.id as NavigationModule);
                         }
                       }}
+                      type="button"
+                      aria-expanded={hasSubItems ? Boolean(isExpanded) : undefined}
+                      aria-controls={hasSubItems ? `erp-nav-group-${item.id}` : undefined}
                       className={`w-full flex items-center gap-2 px-2.5 py-2.5 lg:py-1.5 min-h-[44px] lg:min-h-0 rounded text-xs font-medium transition-colors ${
                         isParentActive && !hasSubItems
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold'
@@ -369,13 +377,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                     {/* Sub-Items Tree List */}
                     {hasSubItems && isExpanded && !collapsed && (
-                      <div className="pl-8 pr-1 space-y-0.5 py-0.5">
+                      <div id={`erp-nav-group-${item.id}`} className="pl-8 pr-1 space-y-0.5 py-0.5">
                         {allowedSubItems!.map((sub) => {
                           const isSubActive = selectedMod === sub.id;
 
                           return (
                             <button
                               key={sub.id}
+                              type="button"
                               onClick={() => handleSelectModule(sub.id as NavigationModule)}
                               title={sub.label}
                               className={`w-full text-left py-2.5 lg:py-1 px-2.5 min-h-[44px] lg:min-h-0 rounded text-[11px] leading-snug transition-colors block whitespace-normal break-words lg:truncate ${

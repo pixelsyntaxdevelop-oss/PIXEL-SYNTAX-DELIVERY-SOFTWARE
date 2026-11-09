@@ -31,3 +31,39 @@ html, body {
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Pixel Syntax ERP responsive shell. Keep wide data tables locally scrollable
+   rather than letting one data column stretch the entire mobile viewport. */
+#root {
+  min-width: 0;
+  min-height: 100%;
+}
+.erp-responsive-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+}
+.erp-responsive-content > * {
+  max-width: 100%;
+  min-width: 0;
+}
+.erp-responsive-content :where(.overflow-x-auto, .overflow-auto) {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.erp-responsive-content :where(input, select, textarea) {
+  max-width: 100%;
+}
+@media (max-width: 639px) {
+  /* 16px input font prevents unwanted Safari auto-zoom after tap. */
+  .erp-responsive-content :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .erp-responsive-content {
+    scroll-behavior: auto;
+  }
+}
