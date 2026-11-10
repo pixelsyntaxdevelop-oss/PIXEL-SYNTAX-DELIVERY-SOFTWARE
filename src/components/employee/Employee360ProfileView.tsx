@@ -399,6 +399,8 @@ export const Employee360ProfileView: React.FC<Employee360ProfileViewProps> = ({
   const statusHistory = Array.isArray(profile?.statusHistory) ? profile.statusHistory : [];
   const vehicleHistory = Array.isArray(profile?.vehicleHistory) ? profile.vehicleHistory : [];
   const simHistory = Array.isArray(profile?.simHistory) ? profile.simHistory : [];
+  const bikeCustodyHistory = Array.isArray((profile as any)?.bikeCustodyHistory) ? (profile as any).bikeCustodyHistory : [];
+  const simCustodyHistory = Array.isArray((profile as any)?.simCustodyHistory) ? (profile as any).simCustodyHistory : [];
   const assetHistory = Array.isArray(profile?.assetHistory) ? profile.assetHistory : [];
   const projectHistory = Array.isArray(profile?.projectHistory) ? profile.projectHistory : [];
 
@@ -1342,6 +1344,33 @@ export const Employee360ProfileView: React.FC<Employee360ProfileViewProps> = ({
                 </div>
               </div>
 
+              {(bikeCustodyHistory.length > 0 || simCustodyHistory.length > 0) && (
+                <section className="space-y-3 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+                  <h4 className="text-xs font-bold uppercase text-slate-700 dark:text-slate-200">
+                    Previous Holders of Current Bike & SIM
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h5 className="font-bold text-xs">Bike {activeVehiclePlate || 'Not assigned'}</h5>
+                      {bikeCustodyHistory.map((item: any) => (
+                        <div key={item.id} className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 text-xs">
+                          <div className="font-bold">{item.holder_name} ({item.holder_code})</div>
+                          <div>{item.assignment_date} to {item.return_date || 'Current'} • {item.assignment_status}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <h5 className="font-bold text-xs">SIM {employee.current_sim_number || 'Not assigned'}</h5>
+                      {simCustodyHistory.map((item: any) => (
+                        <div key={item.id} className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 text-xs">
+                          <div className="font-bold">{item.holder_name} ({item.holder_code})</div>
+                          <div>{item.assigned_date || String(item.assigned_at || '').slice(0, 10)} to {item.return_date || 'Current'} • {item.status}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
               {/* Vehicle History Table */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -1721,6 +1750,35 @@ export const Employee360ProfileView: React.FC<Employee360ProfileViewProps> = ({
           {/* ========================================================================= */}
           {activeTab === 'documents' && (
             <div className="space-y-6">
+              <section className="space-y-3 border rounded-2xl border-slate-200 dark:border-slate-800 p-4">
+                <h4 className="text-xs font-bold uppercase text-slate-700 dark:text-slate-200">
+                  Identity & Document Expiry Dates
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  Dates from the employee record. Actual scans appear in the vault only after a successful upload.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                  {[
+                    { label: 'Emirates ID', expiry: employee.emirates_id_expiry },
+                    { label: 'Residence Visa', expiry: employee.visa_expiry },
+                    { label: 'Passport', expiry: employee.passport_expiry },
+                    { label: 'Driving Licence', expiry: employee.driving_license_expiry },
+                  ].map((item) => {
+                    const days = item.expiry
+                      ? Math.ceil((new Date(String(item.expiry) + 'T23:59:59+04:00').getTime() - Date.now()) / 86400000)
+                      : null;
+                    const condition = days === null || !Number.isFinite(days) ? 'Missing date'
+                      : days < 0 ? 'EXPIRED' : days <= 30 ? 'RENEW SOON' : 'VALID';
+                    return (
+                      <div key={item.label} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-xs space-y-1">
+                        <div className="font-bold">{item.label}</div>
+                        <div>{item.expiry || 'No date saved'}</div>
+                        <div className="font-semibold text-amber-700 dark:text-amber-400">{condition}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
               {/* Passport Custody & Expiries Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Passport Custody Card */}
@@ -1852,7 +1910,7 @@ export const Employee360ProfileView: React.FC<Employee360ProfileViewProps> = ({
                     <div className="flex justify-between">
                       <span className="text-slate-400">Visa Expiry Date:</span>
                       <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                        {employee.visa_expiry || '2027-02-14'}
+                        {employee.visa_expiry || '—'}
                       </span>
                     </div>
                   </div>
@@ -1897,11 +1955,11 @@ export const Employee360ProfileView: React.FC<Employee360ProfileViewProps> = ({
                 </button>
               </div>
 
-              {/* Compact Top Summary Metrics: Current / Latest Published Salary & Year-to-Date */}
+              {/* Compact Top Summary Metrics: Latest Recorded Salary (Draft Included) & Year-to-Date */}
               {payrollData?.months && payrollData.months.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                    <span className="text-[11px] text-slate-500 font-medium block">Current / Latest Published Salary</span>
+                    <span className="text-[11px] text-slate-500 font-medium block">Latest Recorded Salary (Draft Included)</span>
                     <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
                       AED {((payrollData.months[0]?.net_payable || 0)).toFixed(2)}
                     </span>
@@ -1911,7 +1969,7 @@ export const Employee360ProfileView: React.FC<Employee360ProfileViewProps> = ({
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                    <span className="text-[11px] text-slate-500 font-medium block">Year-to-Date Published Total</span>
+                    <span className="text-[11px] text-slate-500 font-medium block">Recorded Salary Total (Draft Included)</span>
                     <span className="text-base font-bold text-slate-900 dark:text-white mt-0.5 block">
                       AED {(payrollData.months.reduce((acc: number, m: any) => acc + (m.net_payable || 0), 0)).toFixed(2)}
                     </span>
@@ -1921,7 +1979,7 @@ export const Employee360ProfileView: React.FC<Employee360ProfileViewProps> = ({
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                    <span className="text-[11px] text-slate-500 font-medium block">Verified Payroll Batches</span>
+                    <span className="text-[11px] text-slate-500 font-medium block">Recorded Payroll Months</span>
                     <span className="text-base font-bold text-blue-600 dark:text-blue-400 mt-0.5 block">
                       {payrollData.months.length} Month(s)
                     </span>
@@ -1978,7 +2036,7 @@ export const Employee360ProfileView: React.FC<Employee360ProfileViewProps> = ({
                               <div className="lg:col-span-2">
                                 <span className="text-[10px] text-slate-400 block font-medium">Project Name</span>
                                 <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                                  {line.project_name || 'Allied Partner / Client Project'}
+                                  {line.project_name || 'Demo Delivery Project'}
                                 </span>
                                 <span className="text-[10px] text-slate-500 block">
                                   Method: {line.calculation_method || 'PER_DELIVERY'}

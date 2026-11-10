@@ -3577,6 +3577,42 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
         emp.current_sim_assigned_by = null;
       }
 
+      // Asset-centric custody: show who held THIS bike/SIM before the rider.
+      // Employee history alone cannot answer "who had this vehicle last?".
+      const [bikeCustodyRes, simCustodyRes] = await Promise.all([
+        emp.current_bike_id
+          ? supabase.from('vehicle_assignments').select('*')
+              .eq('tenant_id', tenantId).eq('vehicle_id', emp.current_bike_id)
+              .order('assignment_date', { ascending: false }).limit(100)
+          : Promise.resolve({ data: [], error: null }),
+        emp.current_sim_id
+          ? supabase.from('sim_assignments').select('*')
+              .eq('tenant_id', tenantId).eq('sim_card_id', emp.current_sim_id)
+              .order('assigned_at', { ascending: false }).limit(100)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (bikeCustodyRes.error || simCustodyRes.error) {
+        return jsonResponse({ error: 'Unable to load current asset custody history' }, 503);
+      }
+      const assetHolderIds = [...new Set([
+        ...(bikeCustodyRes.data || []).map((entry: any) => entry.employee_id),
+        ...(simCustodyRes.data || []).map((entry: any) => entry.employee_id),
+      ].filter(Boolean))];
+      const { data: assetHolders } = assetHolderIds.length
+        ? await supabase.from('employees').select('id,full_name,employee_code')
+            .eq('tenant_id', tenantId).in('id', assetHolderIds)
+        : { data: [] as any[] };
+      const assetHolderById = new Map<string, any>((assetHolders || []).map((holder: any) => [holder.id, holder]));
+      const bikeCustodyHistory = (bikeCustodyRes.data || []).map((entry: any) => ({
+        ...entry,
+        holder_name: assetHolderById.get(entry.employee_id)?.full_name || 'Recorded holder not found',
+        holder_code: assetHolderById.get(entry.employee_id)?.employee_code || entry.employee_id,
+      }));
+      const simCustodyHistory = (simCustodyRes.data || []).map((entry: any) => ({
+        ...entry,
+        holder_name: assetHolderById.get(entry.employee_id)?.full_name || entry.employee_name || 'Recorded holder not found',
+        holder_code: assetHolderById.get(entry.employee_id)?.employee_code || entry.employee_id,
+      }));
       const [timelineRes, statusHistoryRes] = await Promise.all([
         supabase.from('employee_timeline_events').select('*')
           .eq('tenant_id', tenantId).eq('employee_id', emp.id)
@@ -3594,6 +3630,8 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
         currentVehicle: currentVehicleObj,
         currentSim: currentSimObj,
         activeAssets: [],
+        bikeCustodyHistory,
+        simCustodyHistory,
         timeline: timelineRes.data || [],
         statusHistory: statusHistoryRes.data || [],
         projectHistory: assignmentsList.length > 0 ? assignmentsList : (emp.project_id ? [{
@@ -5915,7 +5953,8 @@ export default {
         }
       }
       // Demo payroll routes are isolated, authenticated, and database-backed.
-      if (cleanPath.startsWith('/api/v1/payroll/')) {
+      if (cleanPath.startsWith('/api/v1/payroll/') ||
+          cleanPath.startsWith('/api/erp/payroll/employee-payroll-360/')) {
         const database = getWorkerSupabaseClient(env);
         if (!database) return jsonResponse({ error: 'Demo database is not configured.' }, 503);
         const payrollResponse = await handleDemoPayrollWorkerRoutes(request, database, 'company_pixel_syntax');

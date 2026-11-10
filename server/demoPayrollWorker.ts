@@ -110,11 +110,77 @@ export async function handleDemoPayrollWorkerRoutes(
   request: Request, db: SupabaseClient, tenantId: string
 ): Promise<Response | null> {
   const path = new URL(request.url).pathname.replace(/\/+$/, '');
-  if (!path.startsWith('/api/v1/payroll/')) return null;
+  if (!path.startsWith('/api/v1/payroll/') &&
+      !path.startsWith('/api/erp/payroll/employee-payroll-360/')) return null;
   if (tenantId !== 'company_pixel_syntax') return json({ error: 'Forbidden tenant' }, 403);
   const method = request.method;
 
   try {
+    const employeePayrollMatch = path.match(/^\/api\/erp\/payroll\/employee-payroll-360\/([^/]+)$/);
+    if (method === 'GET' && employeePayrollMatch) {
+      const employeeId = decodeURIComponent(employeePayrollMatch[1]);
+      const { data: employee, error: empError } = await db.from('employees')
+        .select('id,employee_code,full_name')
+        .eq('tenant_id', tenantId).eq('id', employeeId).maybeSingle();
+      if (empError) return json({ error: empError.message }, 500);
+      if (!employee) return json({ error: 'Employee not found in demo tenant' }, 404);
+      const [payrollRes, linesRes, projects] = await Promise.all([
+        db.from('payroll_records').select('*').eq('tenant_id', tenantId)
+          .eq('employee_id', employee.id).order('period_month', { ascending: false }).limit(120),
+        db.from('project_payroll_lines').select('*').eq('tenant_id', tenantId)
+          .eq('employee_id', employee.id).order('period_month', { ascending: false }).limit(500),
+        pageRecords(db, 'projects', tenantId),
+      ]);
+      if (payrollRes.error || linesRes.error)
+        return json({ error: payrollRes.error?.message || linesRes.error?.message }, 500);
+      const projectNames = new Map<string,string>(projects.map((project: any) => [project.id, project.name]));
+      const allLines: any[] = linesRes.data || [];
+      const months = (payrollRes.data || []).map((payroll: any) => {
+        const lines = allLines.filter((line: any) => line.period_month === payroll.period_month)
+          .sort((a: any, b: any) => String(a.period_start).localeCompare(String(b.period_start)));
+        const project_lines = lines.map((line: any) => ({
+          id: line.id,
+          project_id: line.project_id,
+          project_name: projectNames.get(line.project_id) || line.project_id,
+          external_rider_id: line.external_rider_id,
+          external_id_type: 'Platform Rider ID',
+          assignment_id: line.assignment_id,
+          assignment_start_date: line.period_start,
+          assignment_end_date: line.period_end,
+          worked_days: Number(line.worked_days || 0),
+          units_completed: Number(line.orders_count || 0),
+          calculation_method: line.pay_model,
+          rate: Number(line.rate_aed || 0),
+          gross_earnings: round(Number(line.base_salary_aed || 0) +
+            Number(line.commission_aed || 0) + Number(line.tips_aed || 0) +
+            Number(line.incentives_aed || 0)),
+          deductions: Number(line.deductions_aed || 0),
+          incentives: Number(line.incentives_aed || 0),
+          net_project_amount: Number(line.net_payable_aed || 0),
+          calculation_source: line.calculation_source,
+        }));
+        const gross = project_lines.length
+          ? round(project_lines.reduce((amount: number, line: any) => amount + line.gross_earnings, 0))
+          : round(Number(payroll.base_salary || 0) + Number(payroll.incentives || 0) +
+            Number(payroll.overtime_pay || 0));
+        const deductions = project_lines.length
+          ? round(project_lines.reduce((amount: number, line: any) => amount + line.deductions, 0))
+          : round(Number(payroll.penalties || 0) + Number(payroll.tax_deductions || 0));
+        return {
+          month: payroll.period_month,
+          period_month: payroll.period_month,
+          status: payroll.status || 'DRAFT',
+          gross_earnings: gross,
+          deductions,
+          net_payable: Number(payroll.net_payable || 0),
+          project_lines,
+          is_demo: true,
+          payment_processed: false,
+        };
+      });
+      return json({ success: true, employee, months, is_demo: true });
+    }
+
     const periodMatch = path.match(/^\/api\/v1\/payroll\/periods\/(\d{4}-\d{2})$/);
     if (method === 'GET' && periodMatch) {
       if (!validPeriod(periodMatch[1])) return json({ error: 'Invalid payroll month' }, 400);

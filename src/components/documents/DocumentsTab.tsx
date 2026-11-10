@@ -94,7 +94,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
     if (documents.length === 0) return;
     setDownloadingZip(true);
     try {
-      const docIds = documents.map((d) => d.id);
+      const docIds = documents.filter((d) => Boolean(d.current_file_name)).map((d) => d.id);
       await documentService.bulkDownloadZip(docIds, `${entityName.replace(/\s+/g, '_')}_documents.zip`);
       setFeedback('Vault download initiated');
       setTimeout(() => setFeedback(null), 3000);
@@ -105,26 +105,28 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
     }
   };
 
-  // Filtering
-  const filteredDocs = documents.filter((doc) => {
-    const matchesSearch =
-      doc.document_type_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.document_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.issuing_authority?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    if (!matchesSearch) return false;
-
-    if (statusFilter === 'VALID') {
-      return doc.status === 'ACTIVE' && (doc.days_remaining === undefined || doc.days_remaining > 30);
-    }
-    if (statusFilter === 'EXPIRING_SOON') {
-      return doc.days_remaining !== undefined && doc.days_remaining >= 0 && doc.days_remaining <= 30;
-    }
-    if (statusFilter === 'EXPIRED') {
-      return doc.days_remaining !== undefined && doc.days_remaining < 0;
-    }
-
+  // Show only scans that have been saved, grouped by document type.
+  // Front/back versions keep their individual IDs and can be opened separately.
+  const matchingDocuments = documents.filter((d) => {
+    if (!d.current_file_name?.trim()) return false;
+    const query = searchQuery.toLowerCase().trim();
+    if (query && ![d.document_type_name,d.document_number,d.current_file_name]
+      .some((value) => String(value || '').toLowerCase().includes(query))) return false;
+    if (statusFilter === 'VALID') return d.days_remaining == null || d.days_remaining > 30;
+    if (statusFilter === 'EXPIRING_SOON') return d.days_remaining != null && d.days_remaining >= 0 && d.days_remaining <= 30;
+    if (statusFilter === 'EXPIRED') return d.days_remaining != null && d.days_remaining < 0;
     return true;
+  });
+  const groupedDocs = new Map<string, DbEntityDocument[]>();
+  for (const doc of matchingDocuments) {
+    const key = doc.document_type_id || doc.id;
+    groupedDocs.set(key,[...(groupedDocs.get(key) || []),doc]);
+  }
+  const filteredDocs = Array.from(groupedDocs.values()).map((files) => {
+    const urgent = [...files].sort((a,b) =>
+      (a.days_remaining ?? 999999) - (b.days_remaining ?? 999999))[0];
+    return {...files[0], expiry_date:urgent.expiry_date || files[0].expiry_date,
+      days_remaining:urgent.days_remaining};
   });
 
   return (
@@ -321,9 +323,23 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                         <span className="font-bold text-slate-900 dark:text-white">
                           {doc.document_type_name}
                         </span>
+                        <span className="text-[10px] text-slate-500">
+                          {(groupedDocs.get(doc.document_type_id) || []).length} scan(s)
+                        </span>
                         <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono rounded">
                           v{doc.current_version_number || 1}
                         </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {(groupedDocs.get(doc.document_type_id) || []).map((scan) => (
+                          <button key={scan.id} type="button" onClick={() => setPreviewDoc(scan)}
+                            className="px-2 py-1 rounded-md text-[10px] font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"
+                            title={scan.current_file_name}>
+                            {scan.current_file_name?.startsWith('front__') ? 'Front scan' :
+                             scan.current_file_name?.startsWith('back__') ? 'Back scan' :
+                             scan.current_mime_type === 'application/pdf' ? 'PDF file' : 'Document scan'}
+                          </button>
+                        ))}
                       </div>
                     </td>
                     <td className="px-4 py-3 font-mono text-slate-700 dark:text-slate-300 font-bold">
@@ -453,6 +469,17 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                     <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                     {doc.document_type_name}
                   </h4>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {(groupedDocs.get(doc.document_type_id) || []).map((scan) => (
+                      <button key={scan.id} type="button" onClick={() => setPreviewDoc(scan)}
+                        title={scan.current_file_name}
+                        className="px-2 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                        {scan.current_file_name?.startsWith('front__') ? 'Front scan' :
+                         scan.current_file_name?.startsWith('back__') ? 'Back scan' :
+                         scan.current_mime_type === 'application/pdf' ? 'PDF file' : 'Document scan'}
+                      </button>
+                    ))}
+                  </div>
                   <p className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 mt-1">
                     {doc.document_number}
                   </p>
