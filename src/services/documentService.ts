@@ -324,47 +324,56 @@ export const documentService = {
     return this.getDownloadToken(documentId, versionId);
   },
 
-  // 9. Bulk Download Documents as ZIP
+  // 9. Download the REAL stored scans, with each access authorized by the server.
+  // The Worker no longer needs a legacy bulk-download API or artificial TXT files.
   async bulkDownloadZip(documentIds: string[], zipName?: string): Promise<Blob> {
-    const response = await apiClient.post<{
-      files: {
-        documentId: string;
-        fileName: string;
-        dataUrl: string;
-        docType: string;
-        entityName: string;
-      }[];
-    }>('/api/erp/documents/bulk-download', { documentIds });
-
-    if (response.error) throw new Error(response.error);
+    const ids = Array.from(new Set(documentIds.map((id) => String(id).trim()).filter(Boolean)));
+    if (!ids.length) throw new Error('No saved document IDs selected.');
+    if (ids.length > 100) throw new Error('Export a maximum of 100 documents at a time.');
 
     const zip = new JSZip();
-    const files = response.data?.files || [];
-
-    for (const file of files) {
-      if (file.dataUrl && file.dataUrl.includes('base64,')) {
-        const base64Data = file.dataUrl.split('base64,')[1];
-        const folderName = (file.entityName || 'General').replace(/[/\\?%*:|"<>]/g, '_');
-        zip.folder(folderName)?.file(file.fileName, base64Data, { base64: true });
-      } else {
-        throw new Error('Actual file bytes were not returned for ' + (file.fileName || file.documentId) +
-          '. ZIP export cancelled rather than creating a fake attachment.');
+    const names = new Set<string>();
+    let totalBytes = 0;
+    for (const [index, id] of ids.entries()) {
+      const response = await apiClient.get<{
+        readUrl: string; fileName: string; mimeType: string; fileSize: number;
+      }>('/api/erp/storage/read-url/' + encodeURIComponent(id));
+      if (response.error || !response.data) {
+        throw new Error('Stored document ' + id + ' could not be retrieved: ' + (response.error || 'not found'));
       }
+      const file = response.data;
+      const match = String(file.readUrl || '').match(/^data:[^;]+;base64,([A-Za-z0-9+/=]+)$/);
+      if (!match || !match[1]) {
+        throw new Error('Document ' + id + ' has no verified stored content. ZIP cancelled.');
+      }
+      const bytes = Number(file.fileSize || Math.floor(match[1].length * 3 / 4));
+      if (!Number.isFinite(bytes) || bytes < 1) throw new Error('Invalid saved document size for ' + id);
+      totalBytes += bytes;
+      if (totalBytes > 150 * 1024 * 1024) {
+        throw new Error('ZIP exceeds 150 MB. Export smaller document groups.');
+      }
+      const sourceName = String(file.fileName || 'document_' + (index + 1))
+        .replace(/[/\\?%*:|"<>]/g, '_').slice(0, 140);
+      const safeName = sourceName || ('document_' + (index + 1) + '.pdf');
+      const actualName = names.has(safeName) ? (index + 1) + '_' + safeName : safeName;
+      names.add(actualName);
+      zip.file(actualName, match[1], { base64: true });
     }
-
     const zipBlob = await zip.generateAsync({ type: 'blob' });
-
     if (zipName && typeof window !== 'undefined') {
       const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = zipName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = zipName.replace(/[/\\?%*:|"<>]/g, '_');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } finally {
+        // Defer revocation for browsers that start the download asynchronously.
+        window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      }
     }
-
     return zipBlob;
   },
 
