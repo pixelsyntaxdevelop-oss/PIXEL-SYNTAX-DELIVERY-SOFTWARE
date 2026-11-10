@@ -447,31 +447,47 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
     document.body.removeChild(link);
   };
 
-  // Filtered Records
+  // Filtering changes monetary attribution, not only the visible riders.
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
-      const matchSearch =
-        !searchTerm ||
-        r.employee_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.employee_code?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchProj = filterProject === 'ALL' || r.project_name === filterProject;
-      const matchStat = filterStatus === 'ALL' || r.status === filterStatus;
-      return matchSearch && matchProj && matchStat;
+      const query = searchTerm.trim().toLowerCase();
+      const matchSearch = !query ||
+        String(r.employee_name || '').toLowerCase().includes(query) ||
+        String(r.employee_code || '').toLowerCase().includes(query) ||
+        (r.project_salary_lines || []).some((line: any) =>
+          String(line.external_rider_id || '').toLowerCase().includes(query));
+      const matchesProject = filterProject === 'ALL' ||
+        (r.project_salary_lines || []).some((line: any) => line.project_name === filterProject) ||
+        (!r.project_salary_lines?.length && r.project_name === filterProject);
+      const matchesStatus = filterStatus === 'ALL' || r.status === filterStatus;
+      return matchSearch && matchesProject && matchesStatus;
+    }).map((r: any) => {
+      if (filterProject === 'ALL') return r;
+      const projectLines = (r.project_salary_lines || []).filter((line: any) => line.project_name === filterProject);
+      if (!projectLines.length) return r;
+      const sum = (key: string) => Math.round(projectLines.reduce(
+        (total: number, line: any) => total + Number(line[key] || 0), 0) * 100) / 100;
+      return {
+        ...r,
+        original_monthly_net_salary: r.net_salary,
+        project_name: filterProject,
+        project_salary_lines: projectLines,
+        calculated_base_salary: sum('base_salary_aed'),
+        calculated_deliveries_commission: sum('commission_aed'),
+        allowances_total: sum('tips_aed') + sum('incentives_aed'),
+        traffic_fines_deduction: sum('deductions_aed'),
+        penalties_total: sum('deductions_aed'),
+        days_worked: sum('days_worked'),
+        deliveries_count: sum('deliveries_count'),
+        net_salary: sum('net_payable_aed'),
+        is_project_filtered: true,
+      };
     });
   }, [records, searchTerm, filterProject, filterStatus]);
 
-  // Unique projects in records (guarantees Keeta and key operational models are selectable)
-  const projectList = useMemo(() => {
-    const set = new Set<string>();
-    set.add('Keeta Express Delivery');
-    set.add('Noon Minutes');
-    set.add('Allied Partner V1');
-    set.add('Labour Supply');
-    records.forEach((r) => {
-      if (r.project_name) set.add(r.project_name);
-    });
-    return Array.from(set);
-  }, [records]);
+  const projectList = useMemo(() => Array.from(
+    new Set(projectSummaries.map((project) => String(project.project_name)))
+  ).sort((a, b) => a.localeCompare(b)), [projectSummaries]);
 
   // Direct download for official Keeta Excel template
   const handleDownloadKeetaTemplate = async () => {
