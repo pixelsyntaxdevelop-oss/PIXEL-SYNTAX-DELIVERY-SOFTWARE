@@ -72,6 +72,12 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
             </div>
           </div>
 
+          {projectLines.length > 0 && (
+            <p className="text-[11px] rounded-xl p-2 border border-amber-200 bg-amber-50 text-amber-800">
+              DEMO salary allocation; platform rates and orders are synthetic, and no real payment was sent.
+              {record.is_project_filtered ? ' This slip shows only the selected project share.' : ''}
+            </p>
+          )}
           {/* Employee Metadata Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl text-xs">
             <div>
@@ -118,7 +124,8 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {/* Base Salary */}
+                  {/* Avoid counting fixed salary twice when project lines already include it. */}
+                  {projectLines.length === 0 && (
                   <tr>
                     <td className="p-2.5 font-bold text-slate-800 dark:text-slate-200">
                       Standard Monthly Base Salary
@@ -131,11 +138,25 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
                     </td>
                   </tr>
 
+                  )}
                   {/* Multi-Project Lines */}
                   {projectLines.map((pl: any, idx: number) => (
                     <tr key={idx}>
                       <td className="p-2.5 font-bold text-emerald-700 dark:text-emerald-400">
                         <div>{pl.project_name}</div>
+                        {pl.period_start && pl.period_end && (
+                          <div className="text-[10px] text-slate-500 font-normal">
+                            {pl.period_start} to {pl.period_end} • {pl.days_worked} days
+                            {pl.external_rider_id ? ' • ' + pl.external_rider_id : ''}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-slate-500 font-normal">
+                          Base AED {Number(pl.base_salary_aed || 0).toFixed(2)} •
+                          Commission AED {Number(pl.commission_aed || 0).toFixed(2)} •
+                          Tips / bonus AED {(Number(pl.tips_aed || 0) + Number(pl.incentives_aed || 0)).toFixed(2)}
+                          • Deductions AED {Number(pl.deductions_aed || 0).toFixed(2)}
+                          • Net AED {Number(pl.net_payable_aed || 0).toFixed(2)}
+                        </div>
                         {pl.supporting_details?.payout_mapping && (
                           <div className="text-[10px] text-slate-400 font-normal">
                             Structure: {pl.supporting_details.payout_mapping}
@@ -148,9 +169,9 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
                         {pl.calculation_method}
                       </td>
                       <td className="p-2.5 text-right font-mono">
-                        {pl.deliveries_count !== undefined && pl.deliveries_count !== null
-                          ? `${pl.deliveries_count} orders`
-                          : `${pl.working_hours || 0} hrs`}
+                        {pl.calculation_method === 'FIXED_MONTHLY' || pl.calculation_method === 'DAILY_RATE'
+                          ? String(pl.days_worked || 0) + ' days'
+                          : String(pl.deliveries_count || 0) + ' orders'}
                       </td>
                       <td className="p-2.5 text-right font-mono">
                         {typeof pl.rate === 'number' && pl.rate > 0 ? `AED ${pl.rate}` : 'Partner Structure'}

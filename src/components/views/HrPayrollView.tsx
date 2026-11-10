@@ -790,6 +790,35 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeTab === 'CYCLES' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
+          {/* Project salary cards; filter applies to monetary line items, not only rider list. */}
+          {projectSummaries.length > 0 && (
+            <section aria-label="Project salary breakdown" className="space-y-2">
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                Demo salary by project — select a platform to see only its earned share
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-3">
+                {projectSummaries.map((project: any) => (
+                  <button key={project.project_id} type="button"
+                    aria-pressed={filterProject === project.project_name}
+                    onClick={() => setFilterProject(filterProject === project.project_name
+                      ? 'ALL' : project.project_name)}
+                    className={filterProject === project.project_name
+                      ? 'shrink-0 min-w-40 rounded-2xl p-3 border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950 text-left'
+                      : 'shrink-0 min-w-40 rounded-2xl p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-left'}
+                  >
+                    <span className="text-xs font-bold block text-slate-900 dark:text-white">{project.project_name}</span>
+                    <span className="text-sm font-black block mt-1 text-emerald-700 dark:text-emerald-400">
+                      AED {Number(project.net_payable_aed || 0).toLocaleString('en-AE',
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-[11px] text-slate-500 block mt-1">
+                      {project.employee_count} riders • {project.worked_days} work-days • {project.orders_count} orders
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
           {/* Filter Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="relative w-full sm:w-80">
@@ -905,7 +934,7 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                       </td>
                       <td className="p-3">
                         <span className="font-bold text-slate-800 dark:text-slate-200 block">{rec.project_name || 'Fleet Hub'}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{rec.salary_structure_type || 'STANDARD'}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{rec.is_project_filtered ? 'PROJECT SHARE • ' : ''}{rec.salary_structure_type || 'STANDARD'}</span>
                       </td>
                       <td className="p-3 text-right font-mono text-slate-700 dark:text-slate-300">
                         AED {rec.calculated_base_salary?.toLocaleString()}
