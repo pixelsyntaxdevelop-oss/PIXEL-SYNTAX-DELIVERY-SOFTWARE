@@ -1702,6 +1702,16 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
  * Production Master Employees & Attendance Route Handler for Worker
  * Strictly queries public.employees and ensures canonical single source of truth.
  */
+async function verifiedDemoProjectOperator(request: Request, supabase: SupabaseClient): Promise<string | null> {
+  const token = extractTokenFromWebRequest(request);
+  const session = token ? await getSessionAsync(token, supabase) : null;
+  if (!session || session.tenantId !== 'company_pixel_syntax') return null;
+  const { data: staff } = await supabase.from('profiles')
+    .select('full_name').eq('tenant_id', session.tenantId)
+    .eq('id', session.userId).maybeSingle();
+  return staff?.full_name || session.userId;
+}
+
 async function handleMasterEmployeesAndAttendance(request: Request, env: any, cleanPath: string): Promise<Response | null> {
   const isMasterEmployeeRoute =
     cleanPath.startsWith('/api/erp/master-employees') ||
@@ -2722,6 +2732,22 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
     const body = await request.json().catch(() => ({}));
     const { projectId, startDate, employeeCodeOnProject, notes } = body;
     if (!projectId) return jsonResponse({ error: 'Project ID is required' }, 400);
+    const operator = await verifiedDemoProjectOperator(request, supabase);
+    if (!operator) return jsonResponse({ error: 'Signed-in demo operator required' }, 401);
+    const { data: transfer, error: transferError } = await supabase.rpc('demo_transfer_project_atomic', {
+      p_tenant_id: tenantId,
+      p_employee_id: empId,
+      p_new_project_id: projectId,
+      p_start_date: startDate || null,
+      p_external_rider_id: employeeCodeOnProject || null,
+      p_reason: notes || 'Assigned from Employee 360',
+      p_operator: operator,
+    });
+    if (transferError || !transfer?.success) return jsonResponse({ error: transferError?.message || 'Project assignment failed' }, 409);
+    const { data: updatedEmployee } = await supabase.from('employees').select('*')
+      .eq('tenant_id', tenantId).eq('id', transfer.employee_id).maybeSingle();
+    return jsonResponse({ success: true, employee: updatedEmployee, assignment: transfer.assignment, message: 'Project assignment saved atomically' });
+
 
     let { data: emp } = await supabase.from('employees').select('*').eq('id', empId).eq('tenant_id', tenantId).maybeSingle();
     if (!emp) {
@@ -2794,6 +2820,23 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
     const body = await request.json().catch(() => ({}));
     const { newProjectId, effectiveDate, transferReason, employeeCodeOnProject, notes } = body;
     if (!newProjectId) return jsonResponse({ error: 'New Project ID is required' }, 400);
+    const operator = await verifiedDemoProjectOperator(request, supabase);
+    if (!operator) return jsonResponse({ error: 'Signed-in demo operator required' }, 401);
+    const { data: transfer, error: transferError } = await supabase.rpc('demo_transfer_project_atomic', {
+      p_tenant_id: tenantId,
+      p_employee_id: empId,
+      p_new_project_id: newProjectId,
+      p_start_date: effectiveDate || null,
+      p_external_rider_id: employeeCodeOnProject || null,
+      p_reason: transferReason || notes || 'Transferred from Employee 360',
+      p_operator: operator,
+    });
+    if (transferError || !transfer?.success) return jsonResponse({ error: transferError?.message || 'Project transfer failed' }, 409);
+    const { data: updatedEmployee } = await supabase.from('employees').select('*')
+      .eq('tenant_id', tenantId).eq('id', transfer.employee_id).maybeSingle();
+    return jsonResponse({ success: true, employee: updatedEmployee, assignment: transfer.assignment,
+      previousAssignmentEndDate: transfer.previous_assignment_end_date, message: 'Project transfer saved atomically' });
+
 
     let { data: emp } = await supabase.from('employees').select('*').eq('id', empId).eq('tenant_id', tenantId).maybeSingle();
     if (!emp) {
@@ -2930,6 +2973,22 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
     const empId = empUnassignProjMatch[1];
     const body = await request.json().catch(() => ({}));
     const { reason, endDate } = body;
+    const operator = await verifiedDemoProjectOperator(request, supabase);
+    if (!operator) return jsonResponse({ error: 'Signed-in demo operator required' }, 401);
+    const { data: currentAssignment } = await supabase.from('employee_project_assignments')
+      .select('id').eq('tenant_id', tenantId).eq('employee_id', empId).eq('status', 'ACTIVE').maybeSingle();
+    if (!currentAssignment) return jsonResponse({ error: 'No active project assignment exists' }, 409);
+    const { data: ended, error: endError } = await supabase.rpc('demo_end_project_atomic', {
+      p_tenant_id: tenantId,
+      p_assignment_id: currentAssignment.id,
+      p_end_date: endDate || null,
+      p_reason: reason || 'Unassigned from Employee 360',
+      p_operator: operator,
+    });
+    if (endError || !ended?.success) return jsonResponse({ error: endError?.message || 'Project unassignment failed' }, 409);
+    const { data: employee } = await supabase.from('employees').select('*')
+      .eq('tenant_id', tenantId).eq('id', empId).maybeSingle();
+    return jsonResponse({ success: true, employee, message: 'Project assignment ended atomically', result: ended });
 
     const { data: emp } = await supabase.from('employees').select('*').eq('id', empId).eq('tenant_id', tenantId).maybeSingle();
     if (!emp) return jsonResponse({ error: 'Employee not found' }, 404);
@@ -6382,7 +6441,7 @@ export default {
             .from('employees')
             .select('*')
             .eq('tenant_id', tenantId)
-            .or(`full_name.ilike.%${q}%,employee_code.ilike.%${q}%,personal_contact_number.ilike.%${q}%,company_contact_number.ilike.%${q}%,emirates_id_number.ilike.%${q}%`)
+            .or(`full_name.ilike.%${q.replace(/[%,().\\]/g,' ').trim()}%,employee_code.ilike.%${q.replace(/[%,().\\]/g,' ').trim()}%,personal_mobile.ilike.%${q.replace(/[%,().\\]/g,' ').trim()}%,company_mobile.ilike.%${q.replace(/[%,().\\]/g,' ').trim()}%,emirates_id_number.ilike.%${q.replace(/[%,().\\]/g,' ').trim()}%`)
             .limit(25);
 
           const matchedList = emps || [];
@@ -6534,6 +6593,22 @@ export default {
           if (!employee_id || !project_id) {
             return jsonResponse({ error: 'Employee ID and Project ID are required.' }, 400);
           }
+          const actor = await verifiedDemoProjectOperator(request, supabase);
+          if (!actor) return jsonResponse({ error: 'Signed-in project operator required' }, 401);
+          const { data: assigned, error: assignError } = await supabase.rpc('demo_transfer_project_atomic', {
+            p_tenant_id: tenantId,
+            p_employee_id: employee_id,
+            p_new_project_id: project_id,
+            p_start_date: assignment_start_date || null,
+            p_external_rider_id: external_rider_id || null,
+            p_reason: notes || 'Assigned in Rider Project Hub',
+            p_operator: actor,
+          });
+          if (assignError || !assigned?.success)
+            return jsonResponse({ error: assignError?.message || 'Project assignment failed' }, 409);
+          return jsonResponse({ success: true, assignment: assigned.assignment,
+            message: 'Employee project assignment saved atomically' });
+
 
           const [empRes, projRes] = await Promise.all([
             supabase.from('employees').select('*').eq('id', employee_id).eq('tenant_id', tenantId).maybeSingle(),
@@ -6631,6 +6706,18 @@ export default {
           const { assignment_id, end_date, end_reason, notes } = body;
 
           if (!assignment_id) return jsonResponse({ error: 'Assignment ID is required.' }, 400);
+          const actor = await verifiedDemoProjectOperator(request, supabase);
+          if (!actor) return jsonResponse({ error: 'Signed-in project operator required' }, 401);
+          const { data: ended, error: endError } = await supabase.rpc('demo_end_project_atomic', {
+            p_tenant_id: tenantId, p_assignment_id: assignment_id,
+            p_end_date: end_date || null,
+            p_reason: end_reason || notes || 'Ended in Rider Project Hub',
+            p_operator: actor,
+          });
+          if (endError || !ended?.success)
+            return jsonResponse({ error: endError?.message || 'Project unassignment failed' }, 409);
+          return jsonResponse({ success: true, result: ended, message: 'Project ended with preserved history' });
+
 
           const { data: asg } = await supabase
             .from('employee_project_assignments')
@@ -6702,6 +6789,28 @@ export default {
           if (!employee_id || !new_project_id) {
             return jsonResponse({ error: 'Employee ID and new Project ID are required.' }, 400);
           }
+          const actor = await verifiedDemoProjectOperator(request, supabase);
+          if (!actor) return jsonResponse({ error: 'Signed-in project operator required' }, 401);
+          const nextDate = start_date || (end_date
+            ? new Date(Date.parse(end_date + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10)
+            : null);
+          if (end_date && nextDate && Number.isFinite(Date.parse(end_date + 'T00:00:00Z')) &&
+             new Date(Date.parse(nextDate + 'T00:00:00Z') - 86400000).toISOString().slice(0, 10) !== end_date) {
+            return jsonResponse({ error: 'Old project end date must be exactly the day before new project starts.' }, 400);
+          }
+          const { data: moved, error: moveError } = await supabase.rpc('demo_transfer_project_atomic', {
+            p_tenant_id: tenantId, p_employee_id: employee_id,
+            p_new_project_id: new_project_id, p_start_date: nextDate,
+            p_external_rider_id: external_rider_id || null,
+            p_reason: end_reason || notes || 'Transferred in Rider Project Hub',
+            p_operator: actor,
+          });
+          if (moveError || !moved?.success)
+            return jsonResponse({ error: moveError?.message || 'Project transfer failed' }, 409);
+          return jsonResponse({ success: true, assignment: moved.assignment,
+            previousAssignmentEndDate: moved.previous_assignment_end_date,
+            message: 'Project transfer saved atomically' });
+
 
           const [empRes, projRes] = await Promise.all([
             supabase.from('employees').select('*').eq('id', employee_id).eq('tenant_id', tenantId).maybeSingle(),
