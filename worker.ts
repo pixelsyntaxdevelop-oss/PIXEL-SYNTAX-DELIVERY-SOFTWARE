@@ -6016,7 +6016,15 @@ export default {
           cleanPath.startsWith('/api/erp/payroll/employee-payroll-360/')) {
         const database = getWorkerSupabaseClient(env);
         if (!database) return jsonResponse({ error: 'Demo database is not configured.' }, 503);
-        const payrollResponse = await handleDemoPayrollWorkerRoutes(request, database, 'company_pixel_syntax');
+        const token = extractTokenFromWebRequest(request);
+        const payrollSession = token ? await getSessionAsync(token, database) : null;
+        if (!payrollSession || payrollSession.tenantId !== 'company_pixel_syntax') {
+          return jsonResponse({ error: 'Authenticated demo payroll session required.' }, 401);
+        }
+        const payrollResponse = await handleDemoPayrollWorkerRoutes(request, database, payrollSession.tenantId, {
+          userId: payrollSession.userId,
+          role: payrollSession.role,
+        });
         if (payrollResponse) return payrollResponse;
       }
 

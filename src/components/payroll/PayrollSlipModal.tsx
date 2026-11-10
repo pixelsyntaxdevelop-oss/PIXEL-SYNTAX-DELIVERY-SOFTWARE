@@ -258,12 +258,43 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
                     <td className="p-2.5 text-slate-500 font-mono text-[11px]">
                       {fineTickets.length > 0
                         ? `${fineTickets.length} Violations (${fineTickets.slice(0, 2).join(', ')})`
-                        : 'No pending police fines'}
+                        : 'Approved demo fine entries (if any)'}
                     </td>
                     <td className="p-2.5 text-right font-mono font-bold text-rose-600">
-                      - AED {(record.traffic_fines_deduction || record.penalties_total || 0).toLocaleString()}
+                      - AED {Number(record.traffic_fines_deduction || 0).toLocaleString()}
                     </td>
                   </tr>
+
+                  {/* Project provider source deductions belong to project lines. */}
+                  {Number(record.project_source_deduction || 0) > 0 && (
+                    <tr>
+                      <td className="p-2.5 font-bold text-slate-700">Project Source Deductions</td>
+                      <td className="p-2.5 text-slate-500 text-[11px]">Imported or verified order-sheet adjustments</td>
+                      <td className="p-2.5 text-right font-mono font-bold text-rose-600">
+                        - AED {Number(record.project_source_deduction || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  )}
+                  {Number(record.bike_maintenance_deduction || 0) > 0 && (
+                    <tr>
+                      <td className="p-2.5 font-bold text-slate-700">Bike Maintenance</td>
+                      <td className="p-2.5 text-slate-500 text-[11px]">
+                        Historical bike holder; approved demo liability
+                      </td>
+                      <td className="p-2.5 text-right font-mono font-bold text-rose-600">
+                        - AED {Number(record.bike_maintenance_deduction || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  )}
+                  {Number(record.manual_adjustment_deduction || 0) > 0 && (
+                    <tr>
+                      <td className="p-2.5 font-bold text-slate-700">Approved Adjustment</td>
+                      <td className="p-2.5 text-slate-500 text-[11px]">Separate employee-level deduction</td>
+                      <td className="p-2.5 text-right font-mono font-bold text-rose-600">
+                        - AED {Number(record.manual_adjustment_deduction || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  )}
 
                   {/* Salik Toll Transactions */}
                   <tr>

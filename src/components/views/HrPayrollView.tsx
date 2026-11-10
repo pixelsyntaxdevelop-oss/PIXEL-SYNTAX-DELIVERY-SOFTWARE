@@ -45,6 +45,7 @@ import { PayrollImportModal } from '../payroll/PayrollImportModal';
 import { AlliedPartnerWorkbookModal } from '../payroll/AlliedPartnerWorkbookModal';
 import { PayrollReopenModal } from '../payroll/PayrollReopenModal';
 import { PayrollSlipModal } from '../payroll/PayrollSlipModal';
+import { PayrollDeductionWorkflowPanel } from '../payroll/PayrollDeductionWorkflowPanel';
 
 interface HrPayrollViewProps {
   employees?: EmployeeHR[];
@@ -231,32 +232,24 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
     fetchPayrollData(selectedPeriodKey);
   }, [selectedPeriodKey]);
 
-  // Handler: Run / Recalculate Payroll
+  // Generate a verified project payroll draft, with fine, loan and repair applications.
   const handleGeneratePayroll = async () => {
     setLoading(true);
+    setPayrollError(null);
     try {
-      const [yearStr, monthStr] = selectedPeriodKey.split('-');
+      const [year, month] = selectedPeriodKey.split('-').map(Number);
       const res = await fetch('/api/v1/payroll/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          year: parseInt(yearStr, 10),
-          month: parseInt(monthStr, 10),
-          tenantId: 'company_pixel_syntax',
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year, month }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success || data.period) {
-          setActionSuccessMsg(`Payroll calculation generated successfully for ${data.period?.period_month || selectedPeriodKey}!`);
-          setPeriodData(data.period);
-          setRecords(data.records || []);
-          setExceptions(data.exceptions || []);
-          setTimeout(() => setActionSuccessMsg(null), 5000);
-        }
-      }
-    } catch (err) {
-      console.error('Error generating payroll:', err);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'Salary recalculation failed.');
+      setActionSuccessMsg('Draft salaries and approved deductions recalculated. No payment was sent.');
+      await fetchPayrollData(selectedPeriodKey);
+      setTimeout(() => setActionSuccessMsg(null), 5000);
+    } catch (err: any) {
+      console.error('Salary generation failed', err);
+      setPayrollError(String(err?.message || 'Unable to recalculate salary'));
     } finally {
       setLoading(false);
     }
@@ -475,7 +468,12 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
         calculated_base_salary: sum('base_salary_aed'),
         calculated_deliveries_commission: sum('commission_aed'),
         allowances_total: sum('tips_aed') + sum('incentives_aed'),
-        traffic_fines_deduction: sum('deductions_aed'),
+        project_source_deduction: sum('deductions_aed'),
+        traffic_fines_deduction: 0,
+        bike_maintenance_deduction: 0,
+        loan_deduction: 0,
+        advance_deduction: 0,
+        employee_deductions_total: 0,
         penalties_total: sum('deductions_aed'),
         days_worked: sum('days_worked'),
         deliveries_count: sum('deliveries_count'),
@@ -598,10 +596,10 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
             onClick={handleGeneratePayroll}
             disabled={loading}
             className="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-2xl text-xs flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 transition-colors disabled:opacity-50"
-            title="Recalculate deductions & fine ledgers for period"
+            title="Recalculate draft after any fine, maintenance, loan or project changes"
           >
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Recalculate</span>
+            <span>Recalculate Draft</span>
           </button>
 
           {/* WPS SIF Export */}
@@ -640,7 +638,7 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
               Matched Employees
             </span>
             <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-              {records.filter((r) => r.status === 'READY' || r.status === 'CALCULATED' || r.status === 'APPROVED' || r.status === 'PAID').length}
+              {records.length}
             </div>
             <span className="text-[10px] text-slate-400 mt-1 block">
               {records.length} total employees evaluated
@@ -669,21 +667,21 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
           </div>
         </div>
 
-        {/* Metric 4: Published Net Payable */}
+        {/* Metric 4: Reviewed Net Payable */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              Published Net Payable
+              Reviewed Net Payable
             </span>
             <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
-              {periodData?.status === 'PUBLISHED' || periodData?.status === 'PAID'
-                ? `AED ${(periodData?.total_net_payable || periodData?.total_net_salary || liveTotalNet).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              {periodData?.total_net_payable !== undefined
+                ? `AED ${Number(periodData.total_net_payable).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                 : 'AED 0.00'}
             </div>
             <div className="flex items-center gap-1.5 mt-1">
               <span className={`w-2 h-2 rounded-full ${periodData?.status === 'PUBLISHED' || periodData?.status === 'PAID' ? 'bg-emerald-500' : periodData?.status === 'APPROVED' ? 'bg-blue-500' : 'bg-amber-500'}`}></span>
               <span className="text-[10px] text-slate-500 font-semibold uppercase">
-                {periodData?.status === 'PUBLISHED' ? 'Published' : periodData?.status === 'PAID' ? 'Paid / Disbursed' : periodData?.status === 'APPROVED' ? 'Approved (Unpublished)' : 'Draft (Unpublished)'}
+                {(periodData?.stage || 'DRAFT').replace(/_/g, ' ')} • NO BANK TRANSFER SENT
               </span>
             </div>
           </div>
@@ -789,7 +787,12 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
       {/* TAB 1: PAYROLL REGISTER (MAIN WORKFLOW) */}
       {/* ------------------------------------------------------------- */}
       {activeTab === 'CYCLES' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-3 sm:p-6 shadow-sm space-y-4">
+          <PayrollDeductionWorkflowPanel
+            period={selectedPeriodKey}
+            stage={periodData?.stage || 'DRAFT'}
+            onUpdated={() => fetchPayrollData(selectedPeriodKey)}
+          />
           {/* Project salary cards; filter applies to monetary line items, not only rider list. */}
           {projectSummaries.length > 0 && (
             <section aria-label="Project salary breakdown" className="space-y-2">
@@ -908,7 +911,9 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                   <th className="p-3 text-right">Base Salary</th>
                   <th className="p-3 text-right">Commission & Drops</th>
                   <th className="p-3 text-right">Overtime & Allow.</th>
+                  <th className="p-3 text-right">Project Deductions</th>
                   <th className="p-3 text-right">Traffic Fines</th>
+                  <th className="p-3 text-right">Bike Maintenance</th>
                   <th className="p-3 text-right">Salik Tolls</th>
                   <th className="p-3 text-right">Advances</th>
                   <th className="p-3 text-right">Net Payable</th>
@@ -918,7 +923,9 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredRecords.map((rec) => {
-                  const fines = rec.traffic_fines_deduction ?? rec.penalties_total ?? 0;
+                  const projectDed = rec.project_source_deduction || 0;
+                  const fines = rec.traffic_fines_deduction || 0;
+                  const maintenance = rec.bike_maintenance_deduction || 0;
                   const salik = rec.salik_deduction ?? 0;
                   const adv = rec.advance_deduction ?? 0;
                   return (
@@ -948,7 +955,13 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                         +AED {(rec.overtime_pay + rec.allowances_total)?.toLocaleString()}
                       </td>
                       <td className="p-3 text-right font-mono text-rose-500 font-medium">
+                        {projectDed > 0 ? `-AED ${projectDed.toLocaleString()}` : '0'}
+                      </td>
+                      <td className="p-3 text-right font-mono text-rose-500 font-medium">
                         {fines > 0 ? `-AED ${fines.toLocaleString()}` : <span className="text-slate-300 dark:text-slate-600">0</span>}
+                      </td>
+                      <td className="p-3 text-right font-mono text-rose-500 font-medium">
+                        {maintenance > 0 ? `-AED ${maintenance.toLocaleString()}` : '0'}
                       </td>
                       <td className="p-3 text-right font-mono text-amber-600 font-medium">
                         {salik > 0 ? `-AED ${salik.toLocaleString()}` : <span className="text-slate-300 dark:text-slate-600">0</span>}
@@ -994,7 +1007,13 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                     +AED {filteredRecords.reduce((acc, r) => acc + ((r.overtime_pay || 0) + (r.allowances_total || 0)), 0).toLocaleString()}
                   </td>
                   <td className="p-3 text-right font-mono text-rose-500">
-                    -AED {filteredRecords.reduce((acc, r) => acc + (r.traffic_fines_deduction || r.penalties_total || 0), 0).toLocaleString()}
+                    -AED {filteredRecords.reduce((acc, r) => acc + (r.project_source_deduction || 0), 0).toLocaleString()}
+                   </td>
+                   <td className="p-3 text-right font-mono text-rose-500">
+                     -AED {filteredRecords.reduce((acc, r) => acc + (r.traffic_fines_deduction || 0), 0).toLocaleString()}
+                   </td>
+                   <td className="p-3 text-right font-mono text-rose-500">
+                     -AED {filteredRecords.reduce((acc, r) => acc + (r.bike_maintenance_deduction || 0), 0).toLocaleString()}
                   </td>
                   <td className="p-3 text-right font-mono text-amber-600">
                     -AED {filteredRecords.reduce((acc, r) => acc + (r.salik_deduction || 0), 0).toLocaleString()}

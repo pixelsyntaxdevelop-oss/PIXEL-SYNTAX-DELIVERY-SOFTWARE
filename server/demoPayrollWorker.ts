@@ -27,13 +27,28 @@ async function pageRecords(db: SupabaseClient, table: string, tenantId: string, 
 
 async function monthData(db: SupabaseClient, tenantId: string, periodKey: string) {
   const rows = await pageRecords(db, 'payroll_records', tenantId, { period: periodKey });
-  const [employees, projectLines, projects] = await Promise.all([
+  const [employees, projectLines, projects, deductionApps, deductionLedger, reviewCycles] = await Promise.all([
     pageRecords(db, 'employees', tenantId, { archived: false }),
     pageRecords(db, 'project_payroll_lines', tenantId, { period: periodKey }),
     pageRecords(db, 'projects', tenantId),
+    pageRecords(db, 'demo_payroll_deduction_applications', tenantId, { period: periodKey }),
+    pageRecords(db, 'demo_payroll_deductions', tenantId),
+    pageRecords(db, 'demo_payroll_review_cycles', tenantId, { period: periodKey }),
   ]);
   const employeeMap = new Map<string, any>(employees.map((emp: any) => [emp.id, emp]));
   const projectMap = new Map<string, any>(projects.map((project: any) => [project.id, project]));
+  const deductionById = new Map<string, any>(deductionLedger.map((d: any) => [d.id, d]));
+  const applicationsByEmployee = new Map<string, any[]>();
+  for (const app of deductionApps) {
+    const source = deductionById.get(app.deduction_id);
+    const item = {
+      id: app.deduction_id, source_type: source?.source_type || 'OTHER',
+      amount_aed: Number(app.amount_aed || 0), reason: source?.reason || '',
+      source_id: source?.source_id || '', evidence_reference: source?.evidence_reference || '',
+    };
+    applicationsByEmployee.set(app.employee_id, [...(applicationsByEmployee.get(app.employee_id) || []), item]);
+  }
+
   const linesByEmployee = new Map<string, any[]>();
   for (const line of projectLines) {
     const project = projectMap.get(line.project_id);
@@ -67,6 +82,15 @@ async function monthData(db: SupabaseClient, tenantId: string, periodKey: string
     const projectSalaryLines = (linesByEmployee.get(r.employee_id) || []).sort((a: any, b: any) =>
       a.period_start.localeCompare(b.period_start));
     const hasProjectLines = projectSalaryLines.length > 0;
+    const applied = applicationsByEmployee.get(r.employee_id) || [];
+    const sumDeduction = (sourceType: string) => round(applied.filter((d: any) => d.source_type === sourceType)
+      .reduce((total: number, d: any) => total + d.amount_aed, 0));
+    const fineTotal = sumDeduction('TRAFFIC_FINE');
+    const maintenanceTotal = sumDeduction('BIKE_MAINTENANCE');
+    const loanTotal = sumDeduction('LOAN');
+    const manualTotal = sumDeduction('MANUAL_ADJUSTMENT');
+    const externalDeductions = round(fineTotal + maintenanceTotal + loanTotal + manualTotal);
+
     const sumLines = (key: string) => round(projectSalaryLines.reduce((v: number, l: any) => v + Number(l[key] || 0), 0));
     const earnedDays = hasProjectLines ? sumLines('days_worked') :
       new Date(Number(periodKey.slice(0, 4)), Number(periodKey.slice(5, 7)), 0).getDate();
@@ -78,16 +102,22 @@ async function monthData(db: SupabaseClient, tenantId: string, periodKey: string
         : (e.project_name || 'Unassigned'),
       salary_structure_type: hasProjectLines ? 'PROJECT_SPLIT' : (e.salary_type || 'MONTHLY'),
       project_salary_lines: projectSalaryLines,
+      payroll_deduction_items: applied,
+      employee_deductions_total: externalDeductions,
+      loan_deduction: loanTotal,
+      advance_deduction: loanTotal,
+      bike_maintenance_deduction: maintenanceTotal,
+      traffic_fines_deduction: fineTotal,
+      manual_adjustment_deduction: manualTotal,
+      project_source_deduction: hasProjectLines ? sumLines('deductions_aed') : 0,
       project_ids: projectSalaryLines.map((l: any) => l.project_id),
       calculated_base_salary: hasProjectLines ? sumLines('base_salary_aed') : Number(r.base_salary || 0),
       calculated_deliveries_commission: hasProjectLines ? sumLines('commission_aed') : Number(r.incentives || 0),
       overtime_pay: Number(r.overtime_pay || 0),
       allowances_total: hasProjectLines ?
         round(sumLines('tips_aed') + sumLines('incentives_aed')) : 0,
-      traffic_fines_deduction: hasProjectLines ? sumLines('deductions_aed') : Number(r.penalties || 0),
-      penalties_total: hasProjectLines ? sumLines('deductions_aed') : Number(r.penalties || 0),
+      penalties_total: Number(r.penalties || 0),
       salik_deduction: 0,
-      advance_deduction: 0,
       net_salary: Number(r.net_payable || 0),
       days_worked: earnedDays,
       deliveries_count: hasProjectLines ? sumLines('deliveries_count') : 0,
@@ -102,18 +132,27 @@ async function monthData(db: SupabaseClient, tenantId: string, periodKey: string
     status: allPublished ? 'PUBLISHED' : allApproved ? 'APPROVED' : 'DRAFT',
     total_net_payable: total, total_net_salary: total, employees_count: records.length,
     is_demo: true,
+    stage: reviewCycles[0]?.stage || 'DRAFT',
+    payment_processed: false,
+    gross_aed: Number(reviewCycles[0]?.gross_aed || 0),
+    deductions_aed: Number(reviewCycles[0]?.deductions_aed || 0),
+    total_external_deductions_aed: round(deductionApps.reduce((t: number, a: any) => t + Number(a.amount_aed || 0), 0)),
   };
-  return { success: true, period, records, exceptions: [] };
+  return { success: true, period, records, exceptions: [], pending_deductions: deductionLedger
+    .filter((d: any) => d.due_month === periodKey && d.status === 'REVIEW_REQUIRED').length };
 }
 
 export async function handleDemoPayrollWorkerRoutes(
-  request: Request, db: SupabaseClient, tenantId: string
+  request: Request, db: SupabaseClient, tenantId: string,
+  actor: { userId: string; role: string }
 ): Promise<Response | null> {
   const path = new URL(request.url).pathname.replace(/\/+$/, '');
   if (!path.startsWith('/api/v1/payroll/') &&
       !path.startsWith('/api/erp/payroll/employee-payroll-360/')) return null;
   if (tenantId !== 'company_pixel_syntax') return json({ error: 'Forbidden tenant' }, 403);
   const method = request.method;
+  const privileged = ['COMPANY_ADMIN','SUPER_ADMIN','PAYROLL_MANAGER','FINANCE_MANAGER'].includes(actor.role);
+  const writable = privileged || ['ERP_USER','HR_MANAGER'].includes(actor.role);
 
   try {
     const employeePayrollMatch = path.match(/^\/api\/erp\/payroll\/employee-payroll-360\/([^/]+)$/);
@@ -207,27 +246,146 @@ export async function handleDemoPayrollWorkerRoutes(
           is_demo: true,
         }, 409);
       }
-      const { data, error } = await db.rpc('demo_generate_project_payroll', {
-        p_tenant_id: tenantId, p_period_month: periodKey,
+      if (!writable) return json({ error: 'Payroll access denied for this role' }, 403);
+      const { data, error } = await db.rpc('demo_prepare_payroll_with_deductions', {
+        p_tenant: tenantId, p_month: periodKey, p_actor: actor.userId,
       });
       if (error || !data?.success) return json({ error: error?.message || 'Project payroll reconciliation failed' }, 409);
       return json(await monthData(db, tenantId, periodKey));
     }
 
-    const action = path.match(/^\/api\/v1\/payroll\/periods\/(\d{4}-\d{2})\/(approve|publish|pay|reverse-payment|sif)$/);
+    const action = path.match(/^\/api\/v1\/payroll\/periods\/(\d{4}-\d{2})\/(submit|approve|verify|ready|publish|pay|reverse-payment|sif)$/);
     if (action) {
       const periodKey = action[1], verb = action[2];
       if (!validPeriod(periodKey)) return json({ error: 'Invalid period' }, 400);
-      if (verb === 'sif') return json({ error: 'WPS SIF export not yet verified for UAE bank processing.' }, 501);
-      if (verb === 'pay' || verb === 'reverse-payment') {
-        return json({ error: 'This is a demo. No bank/WPS integration is connected. Real transfers or reversals are disabled.' }, 409);
+      if (verb === 'sif') return json({ error: 'WPS SIF export requires real bank and legal validation; disabled in demo.' }, 501);
+      if (['pay','reverse-payment','publish'].includes(verb)) {
+        return json({ error: 'Demo cannot transfer funds, reverse payment or publish paid wages. Use Ready to Process after verification.' }, 409);
       }
       if (method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-      const { data, error } = await db.rpc('demo_transition_project_payroll', {
-        p_tenant_id: tenantId, p_period_month: periodKey, p_action: verb,
+      if (!writable || (verb === 'approve' || verb === 'ready') && !privileged)
+        return json({ error: 'This approval stage requires authorized payroll management role.' }, 403);
+      const body: any = await request.json().catch(() => ({}));
+      const { data, error } = await db.rpc('demo_advance_payroll_review', {
+        p_tenant: tenantId,
+        p_month: periodKey,
+        p_action: verb.toUpperCase(),
+        p_actor: actor.userId,
+        p_comment: String(body.reason || '').slice(0,500),
       });
-      if (error || !data?.success) return json({ error: error?.message || 'Could not transition payroll period' }, 409);
+      if (error || !data?.success) return json({ error: error?.message || 'Approval stage failed' }, 409);
       return json(await monthData(db, tenantId, periodKey));
+    }
+
+    if (method === 'GET' && path === '/api/v1/payroll/fine-candidates') {
+      const [fines, deductions] = await Promise.all([
+        pageRecords(db, 'traffic_fines', tenantId),
+        pageRecords(db, 'demo_payroll_deductions', tenantId),
+      ]);
+      const linked = new Set(deductions.filter((d:any) => d.source_type === 'TRAFFIC_FINE')
+        .map((d:any) => d.source_id));
+      return json({ success:true, fines: fines.map((fine:any)=>({
+        id:fine.id, fine_number:fine.fine_number, plate_number:fine.plate_number,
+        violation_date:fine.violation_date, amount:Number(fine.amount||0),
+        driver_id:fine.driver_id, already_linked:linked.has(fine.id),
+      })) });
+    }
+    if (method === 'GET' && path === '/api/v1/payroll/bike-candidates') {
+      const vehicles = await pageRecords(db, 'vehicles', tenantId);
+      return json({ success:true, vehicles: vehicles.filter((v:any)=>!v.vendor_returned)
+        .map((v:any)=>({id:v.id, plate_number:v.plate_number, assigned_employee_id:v.current_employee_id})) });
+    }
+    if (method === 'GET' && path === '/api/v1/payroll/loan-candidates') {
+      const [loans, employees] = await Promise.all([
+        pageRecords(db, 'employee_loans', tenantId),
+        pageRecords(db, 'employees', tenantId),
+      ]);
+      const names = new Map<string,string>(employees.map((e:any)=>[e.id,e.full_name]));
+      return json({ success:true, loans:loans.filter((l:any)=>l.status==='ACTIVE')
+        .map((l:any)=>({
+          id:l.id,employee_id:l.employee_id,employee_name:names.get(l.employee_id)||l.employee_id,
+          monthly_installment:Number(l.monthly_installment||0),
+          remaining_balance:Number(l.remaining_balance||0),start_month:l.start_month,
+        })) });
+    }
+
+    if (path === '/api/v1/payroll/deductions' && method === 'GET') {
+      const period = new URL(request.url).searchParams.get('period') || '';
+      if (!validPeriod(period)) return json({ error: 'Valid period required' }, 400);
+      const [items, employees] = await Promise.all([
+        pageRecords(db, 'demo_payroll_deductions', tenantId),
+        pageRecords(db, 'employees', tenantId),
+      ]);
+      const employeeMap = new Map<string,any>(employees.map((e:any)=>[e.id,e]));
+      return json({ success: true, period_month: period, deductions: items.filter((d:any)=>
+        d.due_month === period || d.original_due_month === period).map((d:any)=>({
+          ...d, employee_name: employeeMap.get(d.employee_id)?.full_name || d.employee_id,
+          employee_code: employeeMap.get(d.employee_id)?.employee_code || '',
+        }))});
+    }
+
+    if (path === '/api/v1/payroll/deductions/from-fine' && method === 'POST') {
+      if (!writable) return json({ error: 'Insufficient permissions' }, 403);
+      const body:any = await request.json().catch(()=>({}));
+      if (!validPeriod(String(body.due_month || '')) || !body.fine_id)
+        return json({ error: 'Fine ID and salary month required' }, 400);
+      const { data,error } = await db.rpc('demo_register_historical_vehicle_fine',{
+        p_tenant: tenantId,p_fine_id:String(body.fine_id),p_due_month:body.due_month,p_actor:actor.userId,
+      });
+      return error ? json({ error:error.message },409) : json(data,201);
+    }
+
+    if (path === '/api/v1/payroll/deductions/from-maintenance' && method === 'POST') {
+      if (!writable) return json({ error: 'Insufficient permissions' },403);
+      const body:any = await request.json().catch(()=>({}));
+      const amount=Number(body.amount_aed);
+      if (!body.vehicle_id || !body.incident_at || !body.reference || !validPeriod(String(body.due_month||'')) ||
+          !Number.isFinite(amount) || amount<=0 || !String(body.reason||'').trim())
+        return json({ error:'Bike, incident date, reference, positive amount and reason are required' },400);
+      const { data,error }=await db.rpc('demo_register_vehicle_maintenance_charge',{
+        p_tenant:tenantId,p_vehicle_id:String(body.vehicle_id),p_incident_at:body.incident_at,
+        p_amount:amount,p_reference:String(body.reference),p_due_month:body.due_month,
+        p_actor:actor.userId,p_reason:String(body.reason),
+      });
+      return error ? json({error:error.message},409):json(data,201);
+    }
+
+    if (path === '/api/v1/payroll/deductions/loan-installment' && method === 'POST') {
+      if (!writable) return json({error:'Insufficient permissions'},403);
+      const body:any=await request.json().catch(()=>({}));
+      const period=String(body.due_month||'');
+      if (!body.loan_id || !validPeriod(period)) return json({error:'Loan and due month required'},400);
+      const {data:loan,error:loanError}=await db.from('employee_loans').select('*')
+        .eq('tenant_id',tenantId).eq('id',String(body.loan_id)).maybeSingle();
+      if (loanError || !loan || loan.status!=='ACTIVE') return json({error:'Active loan not found'},404);
+      if (period<loan.start_month) return json({error:'Installment before loan starting month'},400);
+      const amount=Math.round(Math.min(Number(loan.monthly_installment),Number(loan.remaining_balance))*100)/100;
+      if (!Number.isFinite(amount) || amount<=0) return json({error:'Loan has no remaining installment'},409);
+      const {data,error}=await db.from('demo_payroll_deductions').insert({
+        tenant_id:tenantId,employee_id:loan.employee_id,source_type:'LOAN',
+        source_id:loan.id+':'+period,original_due_month:period,due_month:period,
+        amount_aed:amount,status:'REVIEW_REQUIRED',reason:'Loan installment pending required consent / review',
+        created_by:actor.userId,
+      }).select('*').single();
+      return error?json({error:error.message},409):json({success:true,deduction:data},201);
+    }
+
+    const actionDeduction = path.match(/^\/api\/v1\/payroll\/deductions\/([^/]+)\/action$/);
+    if (actionDeduction && method === 'POST') {
+      if (!writable) return json({error:'Insufficient permissions'},403);
+      const body:any=await request.json().catch(()=>({}));
+      const verb=String(body.action||'').toUpperCase();
+      if (!['APPROVE','POSTPONE','CANCEL'].includes(verb))
+        return json({error:'Unsupported deduction review action'},400);
+      if (verb==='APPROVE' && !privileged)
+        return json({error:'Deduction approval requires payroll manager'},403);
+      const {data,error}=await db.rpc('demo_review_or_postpone_deduction',{
+        p_tenant:tenantId,p_deduction_id:decodeURIComponent(actionDeduction[1]),
+        p_action:verb,p_actor:actor.userId,
+        p_evidence:body.evidence_reference||null,p_consent:body.consent_reference||null,
+        p_reason:body.reason||null,p_next_month:body.next_month||null,
+      });
+      return error?json({error:error.message},409):json(data);
     }
 
     if (method === 'GET' && path === '/api/v1/payroll/projects') {
