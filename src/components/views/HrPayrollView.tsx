@@ -74,13 +74,12 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
   }, [initialTab]);
 
   // Selected Period
-  const [selectedPeriodKey, setSelectedPeriodKey] = useState<string>(() => {
-    const today = new Date();
-    return String(today.getFullYear()) + '-' + String(today.getMonth() + 1).padStart(2, '0');
-  });
+  const [selectedPeriodKey, setSelectedPeriodKey] = useState<string>('2026-09');
   const [periodData, setPeriodData] = useState<any>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [exceptions, setExceptions] = useState<any[]>([]);
+  const [projectSummaries, setProjectSummaries] = useState<any[]>([]);
+  const [payrollError, setPayrollError] = useState<string | null>(null);
   const [advances, setAdvances] = useState<any[]>([]);
   const [structures, setStructures] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
@@ -163,16 +162,24 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
   // Fetch Payroll Data whenever selectedPeriodKey changes
   const fetchPayrollData = async (periodKey = selectedPeriodKey) => {
     setLoading(true);
+    setPayrollError(null);
     try {
       // 1. Periods & Summary
-      const res = await fetch(`/api/v1/payroll/periods/${periodKey}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success || data.period) {
-          setPeriodData(data.period);
-          setRecords(data.records || []);
-          setExceptions(data.exceptions || []);
-        }
+      const res = await fetch('/api/v1/payroll/periods/' + encodeURIComponent(periodKey));
+      if (!res.ok) {
+        const issue = await res.json().catch(() => ({}));
+        throw new Error(issue.error || 'Payroll could not load.');
+      }
+      const data = await res.json();
+      setPeriodData(data.period || null);
+      setRecords(Array.isArray(data.records) ? data.records : []);
+      setExceptions(Array.isArray(data.exceptions) ? data.exceptions : []);
+      const projectsRes = await fetch('/api/v1/payroll/projects?period=' + encodeURIComponent(periodKey));
+      if (projectsRes.ok) {
+        const projectData = await projectsRes.json();
+        setProjectSummaries(Array.isArray(projectData.projects) ? projectData.projects : []);
+      } else {
+        setProjectSummaries([]);
       }
 
       // 2. Advances
@@ -212,8 +219,9 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
         })));
       }
       setBatches(combinedBatches);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching payroll data:', err);
+      setPayrollError(String(err?.message || 'Payroll request failed'));
     } finally {
       setLoading(false);
     }
@@ -499,6 +507,9 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
         </div>
       )}
 
+      {payrollError && (
+        <div role="alert" className="p-4 border border-rose-200 rounded-xl bg-rose-50 text-rose-800 text-xs">{payrollError}</div>
+      )}
       {/* Main Top Header: Section 1 Compliance */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
         <div className="space-y-1">

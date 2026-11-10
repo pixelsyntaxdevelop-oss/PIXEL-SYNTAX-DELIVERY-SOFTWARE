@@ -27,26 +27,70 @@ async function pageRecords(db: SupabaseClient, table: string, tenantId: string, 
 
 async function monthData(db: SupabaseClient, tenantId: string, periodKey: string) {
   const rows = await pageRecords(db, 'payroll_records', tenantId, { period: periodKey });
-  const employees = await pageRecords(db, 'employees', tenantId, { archived: false });
+  const [employees, projectLines, projects] = await Promise.all([
+    pageRecords(db, 'employees', tenantId, { archived: false }),
+    pageRecords(db, 'project_payroll_lines', tenantId, { period: periodKey }),
+    pageRecords(db, 'projects', tenantId),
+  ]);
   const employeeMap = new Map<string, any>(employees.map((emp: any) => [emp.id, emp]));
+  const projectMap = new Map<string, any>(projects.map((project: any) => [project.id, project]));
+  const linesByEmployee = new Map<string, any[]>();
+  for (const line of projectLines) {
+    const project = projectMap.get(line.project_id);
+    const shaped = {
+      id: line.id,
+      project_id: line.project_id,
+      project_name: project?.name || line.project_id,
+      project_code: project?.code || '',
+      external_rider_id: line.external_rider_id || '',
+      assignment_id: line.assignment_id,
+      period_start: line.period_start,
+      period_end: line.period_end,
+      days_worked: Number(line.worked_days || 0),
+      deliveries_count: Number(line.orders_count || 0),
+      calculation_method: line.pay_model,
+      rate: Number(line.rate_aed || 0),
+      base_salary_aed: Number(line.base_salary_aed || 0),
+      commission_aed: Number(line.commission_aed || 0),
+      tips_aed: Number(line.tips_aed || 0),
+      incentives_aed: Number(line.incentives_aed || 0),
+      deductions_aed: Number(line.deductions_aed || 0),
+      net_payable_aed: Number(line.net_payable_aed || 0),
+      gross_earning: round(Number(line.base_salary_aed || 0) + Number(line.commission_aed || 0) +
+        Number(line.tips_aed || 0) + Number(line.incentives_aed || 0)),
+      calculation_source: line.calculation_source,
+    };
+    linesByEmployee.set(line.employee_id, [...(linesByEmployee.get(line.employee_id) || []), shaped]);
+  }
   const records = rows.map((r: any) => {
     const e = employeeMap.get(r.employee_id) || {};
+    const projectSalaryLines = (linesByEmployee.get(r.employee_id) || []).sort((a: any, b: any) =>
+      a.period_start.localeCompare(b.period_start));
+    const hasProjectLines = projectSalaryLines.length > 0;
+    const sumLines = (key: string) => round(projectSalaryLines.reduce((v: number, l: any) => v + Number(l[key] || 0), 0));
+    const earnedDays = hasProjectLines ? sumLines('days_worked') :
+      new Date(Number(periodKey.slice(0, 4)), Number(periodKey.slice(5, 7)), 0).getDate();
     return {
       ...r,
       employee_code: e.employee_code || r.employee_id,
-      project_name: e.project_name || 'Unassigned',
-      salary_structure_type: e.salary_type || 'MONTHLY',
-      calculated_base_salary: Number(r.base_salary || 0),
-      calculated_deliveries_commission: Number(r.incentives || 0),
+      project_name: hasProjectLines
+        ? projectSalaryLines.map((l: any) => l.project_name).join(' / ')
+        : (e.project_name || 'Unassigned'),
+      salary_structure_type: hasProjectLines ? 'PROJECT_SPLIT' : (e.salary_type || 'MONTHLY'),
+      project_salary_lines: projectSalaryLines,
+      project_ids: projectSalaryLines.map((l: any) => l.project_id),
+      calculated_base_salary: hasProjectLines ? sumLines('base_salary_aed') : Number(r.base_salary || 0),
+      calculated_deliveries_commission: hasProjectLines ? sumLines('commission_aed') : Number(r.incentives || 0),
       overtime_pay: Number(r.overtime_pay || 0),
-      allowances_total: 0,
-      traffic_fines_deduction: Number(r.penalties || 0),
-      penalties_total: Number(r.penalties || 0),
+      allowances_total: hasProjectLines ?
+        round(sumLines('tips_aed') + sumLines('incentives_aed')) : 0,
+      traffic_fines_deduction: hasProjectLines ? sumLines('deductions_aed') : Number(r.penalties || 0),
+      penalties_total: hasProjectLines ? sumLines('deductions_aed') : Number(r.penalties || 0),
       salik_deduction: 0,
       advance_deduction: 0,
       net_salary: Number(r.net_payable || 0),
-      days_worked: new Date(Number(periodKey.slice(0, 4)), Number(periodKey.slice(5, 7)), 0).getDate(),
-      deliveries_count: 0,
+      days_worked: earnedDays,
+      deliveries_count: hasProjectLines ? sumLines('deliveries_count') : 0,
       status: r.status || 'DRAFT',
     };
   });
@@ -81,38 +125,26 @@ export async function handleDemoPayrollWorkerRoutes(
       const body: any = await request.json().catch(() => ({}));
       const year = Number(body.year), month = Number(body.month);
       const periodKey = String(year) + '-' + String(month).padStart(2, '0');
-      if (!Number.isInteger(year) || year < 2020 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12 || !validPeriod(periodKey)) {
+      if (!Number.isInteger(year) || year < 2020 || year > 2100 || !Number.isInteger(month) ||
+          month < 1 || month > 12 || !validPeriod(periodKey)) {
         return json({ error: 'Invalid month or year' }, 400);
       }
-      const employees = await pageRecords(db, 'employees', tenantId, { archived: false });
-      const existing = await pageRecords(db, 'payroll_records', tenantId, { period: periodKey });
-      const existingIds = new Set(existing.map((r: any) => r.employee_id));
-      const rows: any[] = [];
-      for (const e of employees) {
-        if (existingIds.has(e.id)) continue; // never rewrite approved/imported salary data
-        const start = new Date(e.joining_date || (periodKey + '-01'));
-        const periodEnd = new Date(year, month, 0);
-        if (start > periodEnd) continue;
-        const base = Number(e.basic_salary ?? e.salary_base ?? 0);
-        if (!Number.isFinite(base) || base < 0) continue;
-        const daysInMonth = periodEnd.getDate();
-        const daysWorked = start.getFullYear() === year && start.getMonth() === month - 1
-          ? Math.max(0, daysInMonth - start.getDate() + 1) : daysInMonth;
-        const prorated = round(base * daysWorked / daysInMonth);
-        rows.push({
-          id: crypto.randomUUID(), tenant_id: tenantId, period_month: periodKey,
-          employee_id: e.id, employee_name: e.full_name, role: e.designation || 'Employee',
-          base_salary: prorated, incentives: 0, overtime_hours: 0, overtime_pay: 0,
-          penalties: 0, tax_deductions: 0, net_payable: prorated, status: 'DRAFT',
-        });
+      const { count, error: workError } = await db.from('project_daily_earnings')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .gte('work_date', periodKey + '-01')
+        .lte('work_date', new Date(year, month, 0).toISOString().slice(0, 10));
+      if (workError) return json({ error: workError.message }, 500);
+      if (!count) {
+        return json({
+          error: 'No verified attendance/order source exists for this month. Salary was not generated.',
+          is_demo: true,
+        }, 409);
       }
-      for (let i = 0; i < rows.length; i += 200) {
-        const { error } = await db.from('payroll_records')
-          .upsert(rows.slice(i, i + 200), {
-            onConflict: 'tenant_id,employee_id,period_month', ignoreDuplicates: true,
-          });
-        if (error) return json({ error: 'Payroll save failed: ' + error.message }, 500);
-      }
+      const { data, error } = await db.rpc('demo_generate_project_payroll', {
+        p_tenant_id: tenantId, p_period_month: periodKey,
+      });
+      if (error || !data?.success) return json({ error: error?.message || 'Project payroll reconciliation failed' }, 409);
       return json(await monthData(db, tenantId, periodKey));
     }
 
@@ -125,14 +157,32 @@ export async function handleDemoPayrollWorkerRoutes(
         return json({ error: 'This is a demo. No bank/WPS integration is connected. Real transfers or reversals are disabled.' }, 409);
       }
       if (method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-      const from = verb === 'approve' ? 'DRAFT' : 'APPROVED';
-      const to = verb === 'approve' ? 'APPROVED' : 'PUBLISHED';
-      const { data, error } = await db.from('payroll_records').update({ status: to, updated_at: new Date().toISOString() })
-        .eq('tenant_id', tenantId).eq('period_month', periodKey).eq('status', from)
-        .select('id');
-      if (error) return json({ error: error.message }, 500);
-      if (!data?.length) return json({ error: 'No eligible salary drafts to ' + verb }, 409);
+      const { data, error } = await db.rpc('demo_transition_project_payroll', {
+        p_tenant_id: tenantId, p_period_month: periodKey, p_action: verb,
+      });
+      if (error || !data?.success) return json({ error: error?.message || 'Could not transition payroll period' }, 409);
       return json(await monthData(db, tenantId, periodKey));
+    }
+
+    if (method === 'GET' && path === '/api/v1/payroll/projects') {
+      const period = new URL(request.url).searchParams.get('period') || '';
+      if (!validPeriod(period)) return json({ error: 'Select payroll period as YYYY-MM' }, 400);
+      const lines = await pageRecords(db, 'project_payroll_lines', tenantId, { period });
+      const projects = await pageRecords(db, 'projects', tenantId);
+      const results = projects.map((p: any) => {
+        const matched = lines.filter((l: any) => l.project_id === p.id);
+        return {
+          project_id: p.id, project_name: p.name, project_code: p.code,
+          employee_count: new Set(matched.map((l: any) => l.employee_id)).size,
+          project_lines: matched.length,
+          worked_days: matched.reduce((a: number, l: any) => a + Number(l.worked_days || 0), 0),
+          orders_count: matched.reduce((a: number, l: any) => a + Number(l.orders_count || 0), 0),
+          net_payable_aed: round(matched.reduce((a: number, l: any) => a + Number(l.net_payable_aed || 0), 0)),
+          is_demo: true,
+        };
+      });
+      return json({ success: true, period_month: period, projects: results, total_project_lines: lines.length,
+        total_net_payable_aed: round(lines.reduce((sum: number, line: any) => sum + Number(line.net_payable_aed || 0), 0)) });
     }
 
     if (method === 'GET' && path === '/api/v1/payroll/employees') {
