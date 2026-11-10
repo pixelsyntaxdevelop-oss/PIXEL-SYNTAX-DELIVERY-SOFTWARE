@@ -133,6 +133,7 @@ async function monthData(db: SupabaseClient, tenantId: string, periodKey: string
     total_net_payable: total, total_net_salary: total, employees_count: records.length,
     is_demo: true,
     stage: reviewCycles[0]?.stage || 'DRAFT',
+    calculated_at: reviewCycles[0]?.calculated_at || null,
     payment_processed: false,
     gross_aed: Number(reviewCycles[0]?.gross_aed || 0),
     deductions_aed: Number(reviewCycles[0]?.deductions_aed || 0),

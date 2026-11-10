@@ -11,6 +11,7 @@ type DeductionRow = {
 interface Props {
   period: string;
   stage?: string;
+  calculatedAt?: string | null;
   onUpdated: () => void | Promise<void>;
 }
 
@@ -33,7 +34,7 @@ const nextPeriod = (period: string) => {
   return new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 7);
 };
 
-export const PayrollDeductionWorkflowPanel: React.FC<Props> = ({ period, stage = 'DRAFT', onUpdated }) => {
+export const PayrollDeductionWorkflowPanel: React.FC<Props> = ({ period, stage = 'DRAFT', calculatedAt, onUpdated }) => {
   const [items, setItems] = useState<DeductionRow[]>([]);
   const [fineOptions, setFineOptions] = useState<any[]>([]);
   const [loanOptions, setLoanOptions] = useState<any[]>([]);
@@ -54,6 +55,8 @@ export const PayrollDeductionWorkflowPanel: React.FC<Props> = ({ period, stage =
   const [message, setMessage] = useState('');
   const [recalculateNeeded, setRecalculateNeeded] = useState(false);
   const isDraft = stage === 'DRAFT';
+  // An actual recomputation refreshes this server-owned timestamp.
+  useEffect(() => { if (calculatedAt) setRecalculateNeeded(false); }, [calculatedAt]);
   const pendingCount = items.filter(d => d.due_month === period && d.status === 'REVIEW_REQUIRED').length;
   const dueItems = items.filter(d => d.due_month === period);
   const deductionTotal = dueItems.filter(d => d.status === 'APPROVED')

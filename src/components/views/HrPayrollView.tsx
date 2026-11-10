@@ -791,6 +791,7 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
           <PayrollDeductionWorkflowPanel
             period={selectedPeriodKey}
             stage={periodData?.stage || 'DRAFT'}
+            calculatedAt={periodData?.calculated_at || null}
             onUpdated={() => fetchPayrollData(selectedPeriodKey)}
           />
           {/* Project salary cards; filter applies to monetary line items, not only rider list. */}
