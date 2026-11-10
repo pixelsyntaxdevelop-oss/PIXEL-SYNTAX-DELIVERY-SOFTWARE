@@ -47,6 +47,8 @@ import {
   SystemUserAccount,
   SystemAuditLog,
 } from '../../types/erp';
+import { clientStorageService } from '../../services/fileStorageService';
+import { documentService } from '../../services/documentService';
 
 interface AiCopilotDrawerProps {
   isOpen: boolean;
@@ -565,12 +567,13 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
                                     </span>
                                   </div>
                                   <button
-                                    onClick={() =>
-                                      handleDownloadFile(
-                                        `${doc.entityName}_${doc.docType}.pdf`,
-                                        `DOCUMENT ATTACHMENT MOCK CONTENT\n\nEntity: ${doc.entityName}\nDoc Type: ${doc.docType}\nExpiry: ${doc.expiryDate}`
-                                      )
-                                    }
+                                    onClick={async () => {
+                                      try {
+                                        await clientStorageService.triggerFileDownload(doc.id);
+                                      } catch (err: any) {
+                                        alert(err?.message || 'The actual stored document is unavailable. Open Document Vault.');
+                                      }
+                                    }}
                                     className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md"
                                     title="Download Document"
                                   >
@@ -590,13 +593,16 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
                                 </button>
                               )}
                               <button
-                                onClick={() =>
-                                  handleDownloadFile(
-                                    `Filtered_Documents_Zip_${Date.now()}.zip`,
-                                    `ZIP ARCHIVE CONTAINER FOR MATCHED DOCUMENTS`
-                                  )
-                                }
-                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg flex items-center gap-1"
+                                onClick={async () => {
+                                      try {
+                                        const ids = card.documentsData.items.map((item) => item.id).filter(Boolean);
+                                        if (!ids.length) throw new Error('No uploaded document files found.');
+                                        await documentService.bulkDownloadZip(ids, 'Employee_Actual_Documents_' + Date.now() + '.zip');
+                                      } catch (err: any) {
+                                        alert(err?.message || 'ZIP requires actual saved documents.');
+                                      }
+                                    }}
+                                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg flex items-center gap-1"
                               >
                                 <Archive className="w-3.5 h-3.5" /> ZIP All
                               </button>

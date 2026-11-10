@@ -347,9 +347,8 @@ export const documentService = {
         const folderName = (file.entityName || 'General').replace(/[/\\?%*:|"<>]/g, '_');
         zip.folder(folderName)?.file(file.fileName, base64Data, { base64: true });
       } else {
-        // Text/placeholder representation if raw base64 not attached
-        const content = `Document: ${file.docType}\nEntity: ${file.entityName}\nID: ${file.documentId}\nStatus: Verified in Multi-Tenant Vault`;
-        zip.file(`${file.entityName || 'Entity'}_${file.fileName}.txt`, content);
+        throw new Error('Actual file bytes were not returned for ' + (file.fileName || file.documentId) +
+          '. ZIP export cancelled rather than creating a fake attachment.');
       }
     }
 
