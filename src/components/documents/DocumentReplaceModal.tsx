@@ -31,15 +31,18 @@ const COMMON_REASONS = [
   'Other Operational Reason',
 ];
 
-export const DocumentReplaceModal: React.FC<DocumentReplaceModalProps> = ({
+export const DocumentReplaceModal: React.FC<DocumentReplaceModalProps> = (props) => {
+  if (!props.isOpen || !props.document) return null;
+  return <DocumentReplaceForm key={props.document.id} {...props} document={props.document} />;
+};
+
+const DocumentReplaceForm: React.FC<Omit<DocumentReplaceModalProps, 'document'> & {document: DbEntityDocument}> = ({
   isOpen,
   onClose,
   document,
   onSuccess,
   lang = 'EN',
 }) => {
-  if (!isOpen || !document) return null;
-
   const [documentNumber, setDocumentNumber] = useState(document.document_number || '');
   const [issueDate, setIssueDate] = useState(document.issue_date || '');
   const [expiryDate, setExpiryDate] = useState(document.expiry_date || '');
@@ -75,8 +78,8 @@ export const DocumentReplaceModal: React.FC<DocumentReplaceModalProps> = ({
   };
 
   const processSelectedFile = (f: File) => {
-    if (f.size > 25 * 1024 * 1024) {
-      setError('File exceeds maximum allowable size of 25MB');
+    if (f.size > 10 * 1024 * 1024 || f.size === 0 || !['application/pdf','image/jpeg','image/png'].includes(f.type)) {
+      setError('Select a non-empty PDF, JPG or PNG file up to 10 MB');
       return;
     }
 
@@ -103,6 +106,8 @@ export const DocumentReplaceModal: React.FC<DocumentReplaceModalProps> = ({
       return;
     }
 
+    if (!file) { setError('Select the renewed document file first.'); return; }
+    if (issueDate && expiryDate && issueDate > expiryDate) { setError('Expiry date must be on or after issue date.'); return; }
     setLoading(true);
     setUploadProgress(0);
     try {
@@ -116,31 +121,20 @@ export const DocumentReplaceModal: React.FC<DocumentReplaceModalProps> = ({
             entity_name: document.entity_name,
             document_type_id: document.document_type_id,
             document_number: documentNumber.trim(),
-            issue_date: issueDate || undefined,
-            expiry_date: expiryDate || undefined,
+            issue_date: issueDate,
+            expiry_date: expiryDate,
             replacement_reason: finalReason,
             is_replacement: true,
             parent_document_id: document.id,
+            documentId: document.id,
           },
           (progress) => {
             setUploadProgress(progress);
           }
         );
-      } else {
-        updated = await documentService.replaceDocument(document.id, {
-          document_number: documentNumber.trim(),
-          issue_date: issueDate || undefined,
-          expiry_date: expiryDate || undefined,
-          replacement_reason: finalReason,
-          file_name: fileName || `${document.document_type_name}_v${nextVersionNumber}.pdf`,
-          original_file_name: fileName || `${document.document_type_name}_v${nextVersionNumber}.pdf`,
-          mime_type: mimeType,
-          file_size: fileSize || 524288,
-          file_data_url: fileDataUrl || undefined,
-        });
       }
 
-      onSuccess(updated);
+      onSuccess(updated?.document || updated);
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Failed to create new document version');
