@@ -1527,12 +1527,13 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const uploadPath = '/api/erp/storage/document-upload';
   const vehicleUploadPath = '/api/erp/storage/vehicle-document-upload';
   const companyUploadPath = '/api/erp/storage/company-document-upload';
+  const isStorageDiagnostics = request.method === 'GET' && cleanPath === '/api/erp/storage/diagnostics';
   const isCompanyLookup = request.method === 'GET' && ['/api/erp/documents/search-entities','/api/documents/search-entities'].includes(cleanPath) && new URL(request.url).searchParams.get('entityType') === 'Company';
   const isScopedExpiry = request.method === 'GET' && cleanPath === '/api/erp/documents/expiry-dashboard' && ['Company','Employee','Vehicle'].includes(new URL(request.url).searchParams.get('entityType') || '');
   const readPrefix = '/api/erp/storage/read-url/';
   const expiryPrefix = '/api/erp/storage/document-expiry/';
   const archivePrefix = '/api/erp/storage/document-archive/';
-  if (!isCompanyLookup && !isScopedExpiry && cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
+  if (!isStorageDiagnostics && !isCompanyLookup && !isScopedExpiry && cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
       !(request.method === 'GET' && cleanPath === '/api/erp/documents')) return null;
 
   const supabase = getWorkerSupabaseClient(env);
@@ -1548,6 +1549,47 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const r2 = env?.R2_BUCKET;
   const url = new URL(request.url);
 
+  if (isStorageDiagnostics) {
+    if (!r2) return jsonResponse({error:'R2 storage binding unavailable'},503);
+    try {
+      const stats = {company:{count:0,bytes:0},employee:{count:0,bytes:0},vehicle:{count:0,bytes:0},forms:{count:0,bytes:0},other:{count:0,bytes:0}};
+      let totalFiles = 0, used = 0;
+      for (const prefix of [`documents/${tenantId}/`, `tenants/${tenantId}/`]) {
+        let cursor: string | undefined;
+        do {
+          const page = await r2.list({prefix,limit:1000,...(cursor ? {cursor} : {})});
+          for (const item of page.objects) {
+            const category = item.key.slice(prefix.length).split('/')[0].toLowerCase();
+            const group = ['company','companies'].includes(category) ? stats.company :
+              ['employee','employees','rider','riders'].includes(category) ? stats.employee :
+              ['vehicle','vehicles','fleet'].includes(category) ? stats.vehicle :
+              ['officeform','officeforms','office-forms','signed-forms','forms'].includes(category) ? stats.forms : stats.other;
+            group.count++; group.bytes += item.size; totalFiles++; used += item.size;
+          }
+          if (page.truncated && !page.cursor) throw new Error('R2 pagination incomplete');
+          cursor = page.truncated ? page.cursor : undefined;
+        } while (cursor);
+      }
+      const limit = 10_000_000_000;
+      const format = (bytes:number) => bytes === 0 ? '0 B' : bytes < 1000 ? bytes+' B' : bytes < 1e6 ? (bytes/1000).toFixed(2)+' KB' : bytes < 1e9 ? (bytes/1e6).toFixed(2)+' MB' : (bytes/1e9).toFixed(2)+' GB';
+      const percentageUsed = used / limit * 100;
+      const warningLevel = percentageUsed >= 90 ? 'CRITICAL_90' : percentageUsed >= 80 ? 'WARNING_80' : percentageUsed >= 70 ? 'WARNING_70' : 'NORMAL';
+      return jsonResponse({
+        isConfigured:true,bucketName:'pixel-syntax-delivery-demo-documents',totalFiles,
+        r2UsedStorageBytes:used,r2UsedStorageFormatted:format(used),softLimitBytes:limit,softLimitFormatted:'10 GB',
+        remainingBytes:Math.max(0,limit-used),remainingFormatted:format(Math.max(0,limit-used)),percentageUsed,warningLevel,
+        warningMessage:warningLevel==='NORMAL' ? undefined : 'Tenant storage is approaching or exceeds the 10 GB reference allowance. Actual billing depends on account-wide monthly usage.',
+        companyDocsCount:stats.company.count,companyDocsBytes:stats.company.bytes,companyDocsFormatted:format(stats.company.bytes),
+        employeeDocsCount:stats.employee.count,employeeDocsBytes:stats.employee.bytes,employeeDocsFormatted:format(stats.employee.bytes),
+        vehicleDocsCount:stats.vehicle.count,vehicleDocsBytes:stats.vehicle.bytes,vehicleDocsFormatted:format(stats.vehicle.bytes),
+        officeFormsCount:stats.forms.count,officeFormsBytes:stats.forms.bytes,officeFormsFormatted:format(stats.forms.bytes),
+        importFilesCount:stats.other.count,importFilesBytes:stats.other.bytes,importFilesFormatted:format(stats.other.bytes),
+        autoDeleteActive:false,isEstimated:false,measuredAt:new Date().toISOString(),scope:'tenant_prefixes'
+      },200,{'Cache-Control':'private, no-store'});
+    } catch (err:any) {
+      return jsonResponse({error:'R2 usage could not be measured: '+(err?.message || 'Storage unavailable')},503);
+    }
+  }
   if (isCompanyLookup) {
     const { data: company, error } = await supabase.from('tenants').select('id,name,code').eq('id', tenantId).maybeSingle();
     if (error || !company) return jsonResponse({ error: 'Company not found' }, 404);

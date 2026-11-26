@@ -24,6 +24,13 @@ export interface StorageUsageData {
   percentageUsed: number;
   warningLevel: 'NORMAL' | 'WARNING_70' | 'WARNING_80' | 'CRITICAL_90';
   warningMessage?: string;
+  remainingBytes?: number;
+  remainingFormatted?: string;
+  measuredAt?: string;
+  scope?: string;
+  companyDocsCount?: number;
+  companyDocsBytes?: number;
+  companyDocsFormatted?: string;
   employeeDocsCount: number;
   employeeDocsBytes: number;
   employeeDocsFormatted: string;
