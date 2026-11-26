@@ -7,7 +7,7 @@ import { DbDocumentType, DbEntityDocument } from '../../types/database';
 interface DocumentUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  mode?: 'Employee' | 'Vehicle';
+  mode?: 'Employee' | 'Vehicle' | 'Company';
   onSuccess: (newDoc: any) => void;
   preselectedEntityType?: 'Employee' | 'Vehicle' | 'Company';
   preselectedEntityId?: string;
@@ -58,21 +58,26 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       type: mode,
     } : null);
     setQuery('');
+    let current = true;
+    if (mode === 'Company' && !preselectedEntityId) {
+      documentService.searchEntities('company', 'Company').then((found) => { if (current) { if (found.length === 1) setEmployee(found[0]); else setError('Company record could not be resolved.'); } }).catch((e) => { if (current) setError(e.message || 'Company could not load'); });
+    }
     setLoading(true);
     documentService.getDocumentTypes()
       .then((all) => setTypes(all.filter((t) => t.is_active !== false &&
-        (mode === 'Vehicle' ? (t.category === 'VEHICLE' || t.id === 'dt_mulkiya') :
+        (mode === 'Company' ? t.category === 'COMPANY' : mode === 'Vehicle' ? (t.category === 'VEHICLE' || t.id === 'dt_mulkiya') :
           ((t.category === 'EMPLOYEE' || t.category === 'OTHER') && t.id !== 'dt_mulkiya')))
         .sort((a, b) => {
           const ai = priority.indexOf(a.id), bi = priority.indexOf(b.id);
           return (ai < 0 ? 100 : ai) - (bi < 0 ? 100 : bi) || a.name.localeCompare(b.name);
         })))
       .catch((e) => setError(e.message || 'Document types could not load'))
-      .finally(() => setLoading(false));
+      .finally(() => { if (current) setLoading(false); });
+    return () => { current = false; };
   }, [isOpen, mode, preselectedEntityId, preselectedEntityName, preselectedEntityReferenceNumber]);
 
   useEffect(() => {
-    if (!isOpen || employee || query.trim().length < 2) {
+    if (!isOpen || mode === 'Company' || employee || query.trim().length < 2) {
       setResults([]);
       return;
     }
@@ -182,7 +187,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           document_number: existing?.document_number || `DOC-${crypto.randomUUID()}`,
           documentId: existing?.id,
           versionNumber: existing ? (existing.current_version_number || 1) + 1 : undefined,
-          replacementReason: existing ? 'New scan uploaded from employee document boxes' : undefined,
+          replacementReason: existing ? `New scan uploaded from ${mode.toLowerCase()} document boxes` : undefined,
           description: `${type.name} for ${employee.name}`,
         });
         const expiryDate = expiryDates[typeId] || '';
@@ -249,21 +254,21 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden" style={{ height: "calc(100dvh - 24px)", maxHeight: 840 }}>
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between gap-3">
           <div>
-            <h3 className="font-bold text-base">{mode === 'Vehicle' ? 'Vehicle Documents' : 'Employee Documents'}</h3>
-            <p className="text-xs text-slate-500">{mode === 'Vehicle' ? 'Bike plate search karein' : 'Employee select karein'}, boxes mein files lagayein, phir Save All karein.</p>
+            <h3 className="font-bold text-base">{mode === 'Company' ? 'Company Documents' : mode === 'Vehicle' ? 'Vehicle Documents' : 'Employee Documents'}</h3>
+            <p className="text-xs text-slate-500">{mode === 'Company' ? 'Company ke documents select karein' : mode === 'Vehicle' ? 'Bike plate search karein' : 'Employee select karein'}, boxes mein files lagayein, phir Save All karein.</p>
           </div>
           <button type="button" aria-label="Close" disabled={saving} onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X size={18}/></button>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4">
           {error && <div role="alert" className="flex gap-2 p-3 rounded-xl bg-rose-50 text-rose-700 text-xs break-words"><AlertTriangle size={16} className="shrink-0"/>{error}</div>}
           <div className="relative">
-            <label className="block text-xs font-bold mb-1.5">{mode === 'Vehicle' ? 'Vehicle / Bike *' : 'Employee *'}</label>
+            <label className="block text-xs font-bold mb-1.5">{mode === 'Company' ? 'Company' : mode === 'Vehicle' ? 'Vehicle / Bike *' : 'Employee *'}</label>
             {employee ? (
               <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 dark:bg-slate-800 dark:border-slate-700 p-3 gap-2 text-sm">
                 <span className="font-semibold">{employee.name} <span className="text-xs text-slate-500">{employee.code}</span></span>
-                {!preselectedEntityId && <button type="button" disabled={saving} onClick={() => { setEmployee(null); setFiles({}); setQuery(''); }} className="text-blue-700 text-xs font-bold">Change</button>}
+                {!preselectedEntityId && mode !== 'Company' && <button type="button" disabled={saving} onClick={() => { setEmployee(null); setFiles({}); setQuery(''); }} className="text-blue-700 text-xs font-bold">Change</button>}
               </div>
-            ) : (
+            ) : mode === 'Company' ? <p className="text-sm text-slate-500">Resolving company record...</p> : (
               <>
                 <div className="relative"><Search size={16} className="absolute top-3 left-3 text-slate-400"/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={mode === 'Vehicle' ? 'Search bike plate number or code' : 'Search employee name or code'} className="w-full border dark:border-slate-700 dark:bg-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm"/></div>
                 {query.trim().length >= 2 && <div className="relative z-20 mt-2 w-full max-h-[340px] overflow-y-auto overscroll-contain border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 shadow-lg divide-y divide-slate-100 dark:divide-slate-700">
