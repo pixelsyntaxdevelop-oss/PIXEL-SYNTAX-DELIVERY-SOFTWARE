@@ -1527,10 +1527,12 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const uploadPath = '/api/erp/storage/document-upload';
   const vehicleUploadPath = '/api/erp/storage/vehicle-document-upload';
   const companyUploadPath = '/api/erp/storage/company-document-upload';
+  const isCompanyLookup = request.method === 'GET' && ['/api/erp/documents/search-entities','/api/documents/search-entities'].includes(cleanPath) && new URL(request.url).searchParams.get('entityType') === 'Company';
+  const isScopedExpiry = request.method === 'GET' && cleanPath === '/api/erp/documents/expiry-dashboard' && ['Company','Employee','Vehicle'].includes(new URL(request.url).searchParams.get('entityType') || '');
   const readPrefix = '/api/erp/storage/read-url/';
   const expiryPrefix = '/api/erp/storage/document-expiry/';
   const archivePrefix = '/api/erp/storage/document-archive/';
-  if (cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
+  if (!isCompanyLookup && !isScopedExpiry && cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
       !(request.method === 'GET' && cleanPath === '/api/erp/documents')) return null;
 
   const supabase = getWorkerSupabaseClient(env);
@@ -1546,6 +1548,21 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const r2 = env?.R2_BUCKET;
   const url = new URL(request.url);
 
+  if (isCompanyLookup) {
+    const { data: company, error } = await supabase.from('tenants').select('id,name,code').eq('id', tenantId).maybeSingle();
+    if (error || !company) return jsonResponse({ error: 'Company not found' }, 404);
+    return jsonResponse([{ id: company.id, entityId: company.id, name: company.name, code: company.code, type: 'Company' }]);
+  }
+  const today = new Date().toISOString().slice(0,10);
+  const dateIn = (days: number) => new Date(Date.now() + days * 86400000).toISOString().slice(0,10);
+  if (isScopedExpiry) {
+    const kind = url.searchParams.get('entityType')!;
+    const base = () => supabase.from('entity_documents').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_archived', false).eq('entity_type', kind);
+    const results = await Promise.all([base(), base().lt('expiry_date',today), ...[7,15,30,60,90].map(days => base().gte('expiry_date',today).lte('expiry_date',dateIn(days))), base().gt('expiry_date',dateIn(30)), base().is('expiry_date',null)]);
+    if (results.some(r => r.error)) return jsonResponse({error:'Could not load category expiry counts'},500);
+    const [totalDocuments,expired,expiring7Days,expiring15Days,expiring30Days,expiring60Days,expiring90Days,valid,noExpiry] = results.map(r => r.count || 0);
+    return jsonResponse({totalDocuments,expired,expiring7Days,expiring15Days,expiring30Days,expiring60Days,expiring90Days,valid: valid+noExpiry,noExpiry});
+  }
   if (request.method === 'GET' && cleanPath === '/api/erp/documents') {
     let query = supabase.from('entity_documents').select('*', { count: 'exact' })
       .eq('tenant_id', tenantId).eq('is_archived', false);
@@ -1555,12 +1572,20 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
     if (entityType) query = query.eq('entity_type', entityType);
     if (entityId) query = query.eq('entity_id', entityId);
     if (documentTypeId) query = query.eq('document_type_id', documentTypeId);
+    const expiryRange = url.searchParams.get('expiryRange') || '';
+    const statusFilter = url.searchParams.get('status');
+    if (statusFilter) query = query.eq('status', statusFilter);
+    if (expiryRange === 'EXPIRED') query = query.lt('expiry_date',today);
+    else if (expiryRange === 'VALID') query = query.or('expiry_date.is.null,expiry_date.gt.' + dateIn(30));
+    else if (/^(7|15|30|60|90)_DAYS$/.test(expiryRange)) query = query.gte('expiry_date',today).lte('expiry_date',dateIn(Number(expiryRange.split('_')[0])));
     // Keep the search inside the authenticated tenant query, before pagination.
     const search = (url.searchParams.get('search') || '').trim().replace(/[%,().\\]/g, ' ').trim();
     if (search) query = query.or(`entity_name.ilike.%${search}%,document_type_name.ilike.%${search}%,document_number.ilike.%${search}%`);
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
     const pageSize = Math.min(500, Math.max(1, Number(url.searchParams.get('pageSize')) || 50));
-    const { data, count, error } = await query.order('created_at', { ascending: false })
+    const orderColumns: Record<string,string> = {entityName:'entity_name',expiryDate:'expiry_date',createdAt:'created_at',docType:'document_type_name'};
+    const sortColumn = orderColumns[url.searchParams.get('sortBy') || ''] || 'created_at';
+    const { data, count, error } = await query.order(sortColumn, { ascending: url.searchParams.get('sortOrder') === 'asc', nullsFirst: false }).order('id', {ascending:true})
       .range((page - 1) * pageSize, page * pageSize - 1);
     if (error) return jsonResponse({ error: error.message }, 500);
     const docs = data || [];
@@ -1923,11 +1948,6 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
   if (request.method === 'GET' && (cleanPath === '/api/erp/documents/search-entities' || cleanPath === '/api/documents/search-entities')) {
     const q = (url.searchParams.get('q') || '').trim();
     const entityType = url.searchParams.get('entityType') || 'Employee';
-    if (entityType === 'Company') {
-      const { data: company, error } = await supabase.from('tenants').select('id,name,code').eq('id', tenantId).maybeSingle();
-      if (error || !company) return jsonResponse({ error: 'Company not found' }, 404);
-      return jsonResponse([{ id: company.id, entityId: company.id, name: company.name, code: company.code, type: 'Company' }]);
-    }
     if (!['Employee', 'Vehicle'].includes(entityType)) return jsonResponse([]);
     if (q.length < 2) return jsonResponse([]);
     const escaped = q.replace(/[%,()]/g, ' ').trim();
