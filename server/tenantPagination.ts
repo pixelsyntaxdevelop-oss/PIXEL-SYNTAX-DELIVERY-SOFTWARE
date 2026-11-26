@@ -4,7 +4,7 @@ export async function tenantRows(db:any, table:string, tenantId:string, columns=
   const rows:any[]=[];
   let lastId:string|undefined;
   for(let page=0;page<1000;page++){
-    let q=db.from(table).select(columns).eq('tenant_id',tenantId).order('id',{ascending:true}).limit(500);
+    let q=db.from(table).select(columns).eq('tenant_id',tenantId).order('id',{ascending:true}).limit(1000);
     if(configure) q=configure(q);
     if(lastId) q=q.gt('id',lastId);
     const {data,error}=await q;
@@ -15,7 +15,7 @@ export async function tenantRows(db:any, table:string, tenantId:string, columns=
     const nextId=String(batch[batch.length-1].id || '');
     if(!nextId || nextId===lastId) throw new Error('Pagination failed for '+table);
     lastId=nextId;
-    if(batch.length<500) return rows;
+    if(batch.length<1000) return rows;
   }
   throw new Error('Dataset exceeds safe request limit; use a narrower filter.');
 }
