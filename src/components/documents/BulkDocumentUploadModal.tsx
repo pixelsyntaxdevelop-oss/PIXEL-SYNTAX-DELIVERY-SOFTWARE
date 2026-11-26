@@ -94,13 +94,14 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
 
   const handleFilesAdded = (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
+    if (!targetEntityId) { alert('Select the target company, employee or vehicle first.'); return; }
 
     const newItems: BulkUploadItem[] = [];
     Array.from(fileList).forEach((file) => {
       if (file.size > MAX_FILE_SIZE_BYTES) return; // Ignore files > 10MB
 
       const scopedTypes = docTypes.filter((t) => t.category === targetEntityType.toUpperCase() || (targetEntityType === 'Employee' && t.category === 'OTHER'));
-      const detected = detectDocumentType(file.name, scopedTypes);
+      const detected = targetEntityType === 'Company' ? undefined : detectDocumentType(file.name, scopedTypes);
       const id = `item_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
       newItems.push({
@@ -109,8 +110,8 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
         entityType: targetEntityType,
         entityId: targetEntityId || 'emp_bulk',
         entityName: targetEntityName || 'Unassigned Document Batch',
-        documentTypeId: detected?.id || scopedTypes[0]?.id || 'dt_misc',
-        documentTypeName: detected?.name || 'General Document',
+        documentTypeId: detected?.id || '',
+        documentTypeName: detected?.name || 'Select document type',
         documentNumber: `DOC-${Date.now().toString().slice(-6)}`,
         status: 'Queued',
         progress: 0,
@@ -147,9 +148,12 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
   // Start Batch Upload Process
   const startBulkUpload = async () => {
     if (items.length === 0 || isProcessing) return;
+    if (items.some((item) => !item.documentTypeId || !item.entityId || item.entityId === 'emp_bulk')) { alert('Select the correct entity and document type before adding files or uploading.'); return; }
 
     setIsProcessing(true);
+    let allSucceeded = true;
     await clientStorageService.processBulkQueue(items, 3, (updated) => {
+      if (updated.status === 'Failed') allSucceeded = false;
       setItems((prev) => {
         const next = prev.map((item) => (item.id === updated.id ? updated : item));
         const completed = next.filter((i) => i.status === 'Uploaded').length;
@@ -159,7 +163,7 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
     });
 
     setIsProcessing(false);
-    onSuccess();
+    if (allSucceeded) onSuccess();
   };
 
   // Retry only failed items
@@ -353,7 +357,8 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
                           }}
                           className="text-[11px] px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg truncate"
                         >
-                          {docTypes.map((t) => (
+                          <option value="">Select document type</option>
+                          {docTypes.filter((t) => t.category === item.entityType.toUpperCase() || (item.entityType === 'Employee' && t.category === 'OTHER')).map((t) => (
                             <option key={t.id} value={t.id}>
                               {t.name}
                             </option>
