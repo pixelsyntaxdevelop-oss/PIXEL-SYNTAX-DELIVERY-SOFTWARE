@@ -59,10 +59,14 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
   const [loadedSearch, setLoadedSearch] = useState('');
   const [employeeResults, setEmployeeResults] = useState<EntitySearchResult[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<EntitySearchResult | null>(null);
-  const [searchEntityType, setSearchEntityType] = useState<'Employee' | 'Vehicle'>('Employee');
-  const [uploadMode, setUploadMode] = useState<'Employee' | 'Vehicle'>('Employee');
+  const [searchEntityType, setSearchEntityType] = useState<'Employee' | 'Vehicle' | 'Company'>('Employee');
+  const [uploadMode, setUploadMode] = useState<'Employee' | 'Vehicle' | 'Company'>('Employee');
   const previewCache = useRef(new Map<string, string>());
-  const [entityType, setEntityType] = useState<string>('');
+  const entityType = searchEntityType;
+  const switchCategory = (kind: 'Employee' | 'Vehicle' | 'Company') => {
+    ++loadSequence.current;
+    setSearchEntityType(kind); setUploadMode(kind); setSelectedEmployee(null); setSearch(''); setEmployeeResults([]); setDocumentTypeId(''); setSelectedIds([]); setDocuments([]); setSavedPreviews({}); setLoading(true); setExpiryRange('ALL'); setStatus('');
+  };
   const [documentTypeId, setDocumentTypeId] = useState<string>('');
   const [expiryRange, setExpiryRange] = useState<string>('ALL');
   const [status, setStatus] = useState<string>('');
@@ -88,7 +92,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
 
   useEffect(() => {
     const q = search.trim();
-    if (selectedEmployee || q.length < 2) { setEmployeeResults([]); return; }
+    if (searchEntityType === 'Company' || selectedEmployee || q.length < 2) { setEmployeeResults([]); return; }
     let current = true;
     const timer = window.setTimeout(() => {
       documentService.searchEntities(q, searchEntityType)
@@ -96,7 +100,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
         .catch(() => { if (current) setEmployeeResults([]); });
     }, 300);
     return () => { current = false; window.clearTimeout(timer); };
-  }, [search, selectedEmployee?.id]);
+  }, [search, selectedEmployee?.id, searchEntityType]);
 
   // Types and analytics are page metadata: request them once, independently of search.
   useEffect(() => {
@@ -116,7 +120,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
     setLoadError(null);
     try {
       const result = await documentService.getDocuments({
-        entityType: selectedEmployee ? selectedEmployee.type : (entityType as any) || undefined,
+        entityType,
         entityId: selectedEmployee?.id,
         documentTypeId: documentTypeId || undefined,
         expiryRange: expiryRange !== 'ALL' ? expiryRange : undefined,
@@ -126,7 +130,8 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
         pageSize: 100,
       });
       if (sequence === loadSequence.current) {
-        setDocuments(result.documents);
+        setDocuments(result.documents.filter((doc) => doc.entity_type.toLowerCase() === entityType.toLowerCase()));
+        setSelectedIds([]);
         setLoadedSearch(debouncedSearch);
       }
     } catch (err: any) {
@@ -203,7 +208,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
   };
 
   const grouped = new Map<string, DbEntityDocument[]>();
-  for (const doc of documents) {
+  for (const doc of documents.filter((item) => item.entity_type.toLowerCase() === entityType.toLowerCase())) {
     const sided = ['dt_eid', 'dt_dl', 'dt_mulkiya'].includes(doc.document_type_id);
     const key = sided ? [doc.entity_type, doc.entity_id, doc.document_type_id].join(':') : doc.id;
     grouped.set(key, [...(grouped.get(key) || []), doc]);
@@ -242,7 +247,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
         selectedIds,
         `ApexFleet_Document_Vault_Export_${Date.now()}.zip`
       );
-      setFeedback(`Successfully bundled & downloaded ${selectedIds.length} documents as encrypted ZIP.`);
+      setFeedback(`Successfully bundled & downloaded ${selectedIds.length} documents as ZIP.`);
       setTimeout(() => setFeedback(null), 4000);
     } catch (err: any) {
       alert(err?.message || 'Bulk download failed');
@@ -332,21 +337,23 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
           )}
 
           <button
-            onClick={() => { setUploadMode('Employee'); setIsUploadOpen(true); }}
+            onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }}
             className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all shrink-0"
           >
             <Upload className="w-4 h-4" />
-            {lang === 'EN' ? 'Employee Document Boxes' : 'ملفات الموظف'}
+            {`Upload ${entityType} Documents`}
           </button>
-          <button
-            onClick={() => { setUploadMode('Vehicle'); setIsUploadOpen(true); }}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-sm shrink-0"
-          >
-            <Truck className="w-4 h-4" /> Vehicle Document Boxes
-          </button>
-        </div>
+       </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label="Document categories">
+        {(['Company', 'Employee', 'Vehicle'] as const).map((kind) => {
+          const Icon = kind === 'Company' ? Building2 : kind === 'Employee' ? User : Truck;
+          return <button key={kind} type="button" aria-pressed={entityType === kind} onClick={() => switchCategory(kind)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${entityType === kind ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950' : 'border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700'}`}>
+            <Icon className="w-6 h-6 shrink-0" /><div><div className="font-bold text-sm">{kind === 'Employee' ? 'Employee Documents' : kind === 'Vehicle' ? 'Vehicle Documents' : 'Company Documents'}</div><div className="text-xs opacity-75">{kind === 'Company' ? 'Trade license, tax & insurance' : kind === 'Employee' ? 'ID, passport, visa & labour' : 'Mulkiya, registration & insurance'}</div></div>
+          </button>;
+        })}
+      </div>
       {/* Cloudflare R2 Storage Diagnostics & Monitor */}
       {showStorageDiagnostics && (
         <StorageDiagnosticsCard onRefresh={loadVaultData} className="animate-in fade-in duration-200" />
@@ -364,7 +371,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
             }`}
           >
             <p className={`text-[11px] font-bold uppercase tracking-wider ${expiryRange === 'ALL' && !status ? 'text-blue-100' : 'text-slate-500'}`}>
-              Total Vaulted
+              Total Vaulted (All Categories)
             </p>
             <h3 className={`text-2xl font-black mt-1 ${expiryRange === 'ALL' && !status ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
               {summary.totalDocuments}
@@ -463,20 +470,11 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search Box */}
           <div className="relative">
-            <div className="flex gap-1 mb-2">
-              {(['Employee', 'Vehicle'] as const).map((kind) => (
-                <button key={kind} type="button" onClick={() => {
-                  setSearchEntityType(kind); setSelectedEmployee(null); setSearch(''); setEmployeeResults([]);
-                  setEntityType(kind); setDocumentTypeId('');
-                }} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${searchEntityType === kind ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
-                  {kind === 'Employee' ? 'Employee name' : 'Vehicle plate'}
-                </button>
-              ))}
-            </div>
             <Search className="w-4 h-4 absolute left-3.5 bottom-3 text-slate-400" />
             <input
               type="text"
-              placeholder={searchEntityType === 'Vehicle' ? 'Search bike plate number...' : 'Search employee name...'}
+              disabled={entityType === 'Company'}
+              placeholder={entityType === 'Company' ? 'Company documents shown below' : entityType === 'Vehicle' ? 'Search bike plate number...' : 'Search employee name...'}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setSelectedEmployee(null); }}
               className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
@@ -494,18 +492,6 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
             )}
           </div>
 
-          {/* Entity Type Filter */}
-          <select
-            value={entityType}
-            onChange={(e) => setEntityType(e.target.value)}
-            className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-hidden"
-          >
-            <option value="">All Entities (Employees, Vehicles, Company)</option>
-            <option value="Employee">Employees & Riders</option>
-            <option value="Vehicle">Vehicles & Bikes</option>
-            <option value="Company">Company Corporate</option>
-          </select>
-
           {/* Document Type Filter */}
           <select
             value={documentTypeId}
@@ -513,7 +499,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
             className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-hidden"
           >
             <option value="">All Document Categories</option>
-            {docTypes.map((dt) => (
+            {docTypes.filter((dt) => String(dt.category || '').toUpperCase() === entityType.toUpperCase() || (entityType === 'Employee' && dt.category === 'OTHER')).map((dt) => (
               <option key={dt.id} value={dt.id}>
                 {dt.name}
               </option>
@@ -545,7 +531,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
               <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedEmployee ? selectedEmployee.name + ' — Saved Documents' : 'Saved documents matching “' + search.trim() + '”'}</h3>
               {selectedEmployee && <p className="text-xs text-slate-500 mt-1">Uploaded documents appear here. Use the button to add missing documents.</p>}
             </div>
-            {selectedEmployee && <button type="button" onClick={() => { setUploadMode(selectedEmployee.type === 'Vehicle' ? 'Vehicle' : 'Employee'); setIsUploadOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700"><Upload className="w-4 h-4"/> Upload / Manage Documents</button>}
+            {selectedEmployee && <button type="button" onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700"><Upload className="w-4 h-4"/> Upload / Manage Documents</button>}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {documentGroups.map(({ primary: doc, back, members }) => {
@@ -787,7 +773,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
       </div>}
 
       {!loading && selectedEmployee && documents.length === 0 && !loadError && <div className="p-8 text-center text-sm text-slate-500">
-        {selectedEmployee ? <><p className="font-bold text-slate-700 dark:text-slate-300">{selectedEmployee.name} has no uploaded documents yet.</p><button type="button" onClick={() => setIsUploadOpen(true)} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white"><Upload className="w-4 h-4"/> Open Document Boxes</button></> : 'No saved documents match this search.'}
+        {selectedEmployee ? <><p className="font-bold text-slate-700 dark:text-slate-300">{selectedEmployee.name} has no uploaded documents yet.</p><button type="button" onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white"><Upload className="w-4 h-4"/> Open Document Boxes</button></> : 'No saved documents match this search.'}
       </div>}
 
       {/* Modals */}
@@ -835,6 +821,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
       />
 
       <BulkDocumentUploadModal
+        category={entityType}
         isOpen={isBulkUploadOpen}
         onClose={() => setIsBulkUploadOpen(false)}
         onSuccess={() => {
