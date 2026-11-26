@@ -169,7 +169,7 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
   // Retry only failed items
   const retryFailed = async () => {
     const failedItems = items.filter((i) => i.status === 'Failed');
-    if (failedItems.length === 0) return;
+    if (failedItems.length === 0 || isProcessing) return;
 
     // Reset status to Queued
     setItems((prev) =>
@@ -177,15 +177,17 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
     );
 
     setIsProcessing(true);
+    let allSucceeded = true;
     await clientStorageService.processBulkQueue(
       items.filter((i) => i.status === 'Failed' || i.status === 'Queued'),
       3,
       (updated) => {
-        setItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        if (updated.status === 'Failed') allSucceeded = false;
+        setItems((prev) => {const next=prev.map(item => item.id === updated.id ? updated : item);setOverallProgress(Math.round(next.filter(i=>i.status==='Uploaded').length/next.length*100));return next;});
       }
     );
     setIsProcessing(false);
-    onSuccess();
+    if (allSucceeded) onSuccess();
   };
 
   const completedCount = items.filter((i) => i.status === 'Uploaded').length;
