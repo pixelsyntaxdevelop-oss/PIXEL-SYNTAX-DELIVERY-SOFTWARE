@@ -333,7 +333,20 @@ export const clientStorageService = {
       form.append('file', rawFile);
       form.append('employeeId', options.entity_id || options.entityId || '');
       form.append('documentTypeId', options.document_type_id || options.documentTypeId || '');
-      if (options.documentId) form.append('documentId', options.documentId);
+      const existingId = options.documentId || options.parent_document_id;
+      if (existingId) {
+        form.append('documentId', existingId);
+        const reason = options.replacement_reason || options.replacementReason;
+        if (reason) {
+          form.append('replacementReason', reason);
+          const number = options.document_number ?? options.documentNumber;
+          const issue = options.issue_date ?? options.issueDate;
+          const expiry = options.expiry_date ?? options.expiryDate;
+          if (number !== undefined) form.append('documentNumber', number);
+          if (issue !== undefined) form.append('issueDate', issue);
+          if (expiry !== undefined) form.append('expiryDate', expiry);
+        }
+      }
       const response = await apiClient.post<{ document: DbEntityDocument }>(
         '/api/erp/storage/document-upload', form
       );
@@ -349,7 +362,20 @@ export const clientStorageService = {
       form.append('file', rawFile);
       form.append('vehicleId', options.entity_id || options.entityId || '');
       form.append('documentTypeId', options.document_type_id || options.documentTypeId || '');
-      if (options.documentId) form.append('documentId', options.documentId);
+      const existingId = options.documentId || options.parent_document_id;
+      if (existingId) {
+        form.append('documentId', existingId);
+        const reason = options.replacement_reason || options.replacementReason;
+        if (reason) {
+          form.append('replacementReason', reason);
+          const number = options.document_number ?? options.documentNumber;
+          const issue = options.issue_date ?? options.issueDate;
+          const expiry = options.expiry_date ?? options.expiryDate;
+          if (number !== undefined) form.append('documentNumber', number);
+          if (issue !== undefined) form.append('issueDate', issue);
+          if (expiry !== undefined) form.append('expiryDate', expiry);
+        }
+      }
       const response = await apiClient.post<{ document: DbEntityDocument }>(
         '/api/erp/storage/vehicle-document-upload', form
       );
@@ -364,7 +390,20 @@ export const clientStorageService = {
       const form = new FormData();
       form.append('file', rawFile);
       form.append('documentTypeId', options.document_type_id || options.documentTypeId || '');
-      if (options.documentId) form.append('documentId', options.documentId);
+      const existingId = options.documentId || options.parent_document_id;
+      if (existingId) {
+        form.append('documentId', existingId);
+        const reason = options.replacement_reason || options.replacementReason;
+        if (reason) {
+          form.append('replacementReason', reason);
+          const number = options.document_number ?? options.documentNumber;
+          const issue = options.issue_date ?? options.issueDate;
+          const expiry = options.expiry_date ?? options.expiryDate;
+          if (number !== undefined) form.append('documentNumber', number);
+          if (issue !== undefined) form.append('issueDate', issue);
+          if (expiry !== undefined) form.append('expiryDate', expiry);
+        }
+      }
       const response = await apiClient.post<{ document: DbEntityDocument }>('/api/erp/storage/company-document-upload', form);
       if (response.error || !response.data?.document) throw new Error(response.error || 'Company document was not saved');
       progressHandler?.(100);
@@ -599,6 +638,7 @@ export const clientStorageService = {
               processNext();
             });
         }
+        if (queue.length === 0 && active === 0) resolve();
       };
 
       processNext();

@@ -1528,12 +1528,13 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const vehicleUploadPath = '/api/erp/storage/vehicle-document-upload';
   const companyUploadPath = '/api/erp/storage/company-document-upload';
   const isStorageDiagnostics = request.method === 'GET' && cleanPath === '/api/erp/storage/diagnostics';
+  const versionHistoryMatch = request.method === 'GET' ? cleanPath.match(/^\/api\/erp\/documents\/([^/]+)\/(versions|activity)$/) : null;
   const isCompanyLookup = request.method === 'GET' && ['/api/erp/documents/search-entities','/api/documents/search-entities'].includes(cleanPath) && new URL(request.url).searchParams.get('entityType') === 'Company';
   const isScopedExpiry = request.method === 'GET' && cleanPath === '/api/erp/documents/expiry-dashboard' && ['Company','Employee','Vehicle'].includes(new URL(request.url).searchParams.get('entityType') || '');
   const readPrefix = '/api/erp/storage/read-url/';
   const expiryPrefix = '/api/erp/storage/document-expiry/';
   const archivePrefix = '/api/erp/storage/document-archive/';
-  if (!isStorageDiagnostics && !isCompanyLookup && !isScopedExpiry && cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
+  if (!versionHistoryMatch && !isStorageDiagnostics && !isCompanyLookup && !isScopedExpiry && cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
       !(request.method === 'GET' && cleanPath === '/api/erp/documents')) return null;
 
   const supabase = getWorkerSupabaseClient(env);
@@ -1549,18 +1550,34 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const r2 = env?.R2_BUCKET;
   const url = new URL(request.url);
 
+  if (versionHistoryMatch) {
+    const documentId = decodeURIComponent(versionHistoryMatch[1]);
+    const {data: doc, error: docError} = await supabase.from('entity_documents').select('id,entity_type,entity_id').eq('id',documentId).eq('tenant_id',tenantId).eq('is_archived',false).maybeSingle();
+    if (docError || !doc) return jsonResponse({error:'Document not found'},404);
+    const {data: versions,error} = await supabase.from('document_versions').select('id,tenant_id,document_id,version_number,document_number,file_id,file_name,file_size,mime_type,replacement_reason,is_current,uploaded_by,uploaded_at').eq('tenant_id',tenantId).eq('document_id',documentId).order('version_number',{ascending:false});
+    if (error) return jsonResponse({error:'Could not load document versions'},500);
+    if (versionHistoryMatch[2] === 'activity') {
+      return jsonResponse((versions || []).map((v:any) => ({
+        id:v.id,tenant_id:tenantId,document_id:documentId,entity_type:doc.entity_type,entity_id:doc.entity_id,
+        action:v.version_number === 1 ? 'UPLOAD' : 'REPLACE',performed_by:v.uploaded_by || 'Unknown',
+        performed_by_role:'Not recorded',details:v.replacement_reason || (v.version_number === 1 ? 'Initial registration' : 'Version replacement'),
+        version_number:v.version_number,timestamp:v.uploaded_at
+      })),200,{'Cache-Control':'private, no-store'});
+    }
+    return jsonResponse(versions || [],200,{'Cache-Control':'private, no-store'});
+  }
   if (isStorageDiagnostics) {
     if (!r2) return jsonResponse({error:'R2 storage binding unavailable'},503);
     try {
       const stats = {company:{count:0,bytes:0},employee:{count:0,bytes:0},vehicle:{count:0,bytes:0},forms:{count:0,bytes:0},other:{count:0,bytes:0}};
       let totalFiles = 0, used = 0;
-      for (const prefix of [`documents/${tenantId}/`, `tenants/${tenantId}/`]) {
+      for (const prefix of [`documents/${tenantId}/`, `tenants/${tenantId}/`, `forms/${tenantId}/`]) {
         let cursor: string | undefined;
         do {
           const page = await r2.list({prefix,limit:1000,...(cursor ? {cursor} : {})});
           for (const item of page.objects) {
             const category = item.key.slice(prefix.length).split('/')[0].toLowerCase();
-            const group = ['company','companies'].includes(category) ? stats.company :
+            const group = prefix.startsWith('forms/') ? stats.forms : ['company','companies'].includes(category) ? stats.company :
               ['employee','employees','rider','riders'].includes(category) ? stats.employee :
               ['vehicle','vehicles','fleet'].includes(category) ? stats.vehicle :
               ['officeform','officeforms','office-forms','signed-forms','forms'].includes(category) ? stats.forms : stats.other;
@@ -1657,9 +1674,10 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
     const { data: doc, error: docError } = await supabase.from('entity_documents')
       .select('id').eq('id', documentId).eq('tenant_id', tenantId).eq('is_archived', false).maybeSingle();
     if (docError || !doc) return jsonResponse({ error: 'Document not found' }, 404);
-    const { data: version, error: versionError } = await supabase.from('document_versions')
-      .select('storage_path,file_name,mime_type').eq('document_id', documentId)
-      .eq('tenant_id', tenantId).eq('is_current', true).maybeSingle();
+    const versionId = url.searchParams.get('versionId');
+    let versionQuery = supabase.from('document_versions').select('storage_path,file_name,mime_type').eq('document_id',documentId).eq('tenant_id',tenantId);
+    versionQuery = versionId ? versionQuery.eq('id',versionId) : versionQuery.eq('is_current',true);
+    const {data: version,error: versionError} = await versionQuery.maybeSingle();
     if (versionError || !version) return jsonResponse({ error: 'Saved file not found' }, 404);
     const object = await r2.get(version.storage_path);
     if (!object) return jsonResponse({ error: 'Stored file unavailable' }, 404);
@@ -1743,21 +1761,28 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || 'document.pdf';
       objectKey = `documents/${tenantId}/${companyMode ? 'company' : vehicleMode ? 'vehicles' : 'employees'}/${entityId}/${crypto.randomUUID()}/${safeName}`;
       const bytes = await file.arrayBuffer();
+      const head = new Uint8Array(bytes).slice(0,8);
+      const valid = file.type === 'application/pdf' ? String.fromCharCode(...head.slice(0,5)) === '%PDF-'
+        : file.type === 'image/jpeg' ? head[0] === 255 && head[1] === 216 && head[2] === 255
+        : [137,80,78,71,13,10,26,10].every((value,index) => head[index] === value);
+      if (!valid) return jsonResponse({error:'The selected file is not a valid PDF, JPG or PNG.'},400);
       const checksum = crypto.createHash('sha256').update(Buffer.from(bytes)).digest('hex');
       await r2.put(objectKey, bytes, { httpMetadata: { contentType: file.type } });
-      const { data: document, error } = await supabase.rpc(
-        companyMode ? 'pixel_save_company_document' : vehicleMode ? 'allied_save_vehicle_document' : 'allied_save_employee_document', {
-          p_tenant_id: tenantId,
-          [companyMode ? 'p_company_id' : vehicleMode ? 'p_vehicle_id' : 'p_employee_id']: entityId,
-          p_document_type_id: typeId,
-          p_existing_document_id: existingId || null,
-          p_file_name: safeName,
-          p_mime_type: file.type,
-          p_file_size: file.size,
-          p_storage_path: objectKey,
-          p_checksum: checksum,
-          p_actor: session.userId,
-        });
+      const replacementReason = String(form.get('replacementReason') || '').trim();
+      const renewal = Boolean(existingId && replacementReason);
+      const metadata: Record<string,string> = { replacement_reason:replacementReason };
+      for (const [formKey,dbKey] of [['documentNumber','document_number'],['issueDate','issue_date'],['expiryDate','expiry_date']]) {
+        if (form.has(formKey)) metadata[dbKey] = String(form.get(formKey) || '');
+      }
+      const commonArgs = {
+        p_tenant_id:tenantId,p_document_type_id:typeId,p_existing_document_id:existingId || null,
+        p_file_name:safeName,p_mime_type:file.type,p_file_size:file.size,p_storage_path:objectKey,p_checksum:checksum,p_actor:session.userId,
+      };
+      const {data:document,error} = renewal
+        ? await supabase.rpc('pixel_renew_document',{...commonArgs,p_entity_type:documentEntityType,p_entity_id:entityId,p_metadata:metadata})
+        : await supabase.rpc(companyMode ? 'pixel_save_company_document' : vehicleMode ? 'allied_save_vehicle_document' : 'allied_save_employee_document',{
+            ...commonArgs,[companyMode ? 'p_company_id' : vehicleMode ? 'p_vehicle_id' : 'p_employee_id']:entityId
+          });
       if (error || !document) throw new Error(error?.message || 'Document metadata could not be saved');
       return jsonResponse({ document }, 201);
     } catch (err: any) {

@@ -12,6 +12,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { documentService } from '../../services/documentService';
+import { clientStorageService } from '../../services/fileStorageService';
 import { DbEntityDocument, DbDocumentVersion } from '../../types/database';
 
 interface DocumentVersionHistoryModalProps {
@@ -31,18 +32,21 @@ export const DocumentVersionHistoryModal: React.FC<DocumentVersionHistoryModalPr
 }) => {
   const [versions, setVersions] = useState<DbDocumentVersion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (isOpen && document) {
-      setLoading(true);
+      let active = true;
+      setLoading(true); setVersions([]); setError('');
       documentService.getDocumentVersions(document.id)
         .then((data) => {
           // Sort newest version first
           const sorted = [...data].sort((a, b) => b.version_number - a.version_number);
-          setVersions(sorted);
+          if (active) setVersions(sorted);
         })
-        .catch(console.error)
-        .finally(() => setLoading(false));
+        .catch(err => { if(active) setError(err?.message || 'Could not load document history'); })
+        .finally(() => { if(active) setLoading(false); });
+      return () => { active = false; };
     }
   }, [isOpen, document]);
 
@@ -50,10 +54,10 @@ export const DocumentVersionHistoryModal: React.FC<DocumentVersionHistoryModalPr
 
   const handleDownloadVersion = async (version: DbDocumentVersion) => {
     try {
-      const authDownload = await documentService.getDocumentDownloadUrl(document.id, version.id);
-      window.open(authDownload.downloadUrl, '_blank');
-    } catch (err) {
-      console.error('Download failed:', err);
+      setError('');
+      await clientStorageService.triggerFileDownload(document.id, version.id, version.file_name);
+    } catch (err: any) {
+      setError(err?.message || 'Download failed');
     }
   };
 
@@ -90,6 +94,7 @@ export const DocumentVersionHistoryModal: React.FC<DocumentVersionHistoryModalPr
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           {loading ? (
             <div className="py-12 text-center text-slate-400">
               <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
@@ -153,7 +158,7 @@ export const DocumentVersionHistoryModal: React.FC<DocumentVersionHistoryModalPr
                           Expiry: {ver.expiry_date || 'No Expiry'}
                         </span>
                         <span className="font-mono text-slate-500">
-                          {ver.file_size || '512 KB'}
+                          {ver.file_size ? `${Number(ver.file_size).toLocaleString()} B` : 'Size unavailable'}
                         </span>
                       </div>
                     </div>
