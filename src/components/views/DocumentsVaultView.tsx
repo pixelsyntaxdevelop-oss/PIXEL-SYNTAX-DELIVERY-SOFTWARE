@@ -33,6 +33,7 @@ import {
   DocumentExpiryDashboardSummary,
 } from '../../types/database';
 import { DocumentUploadModal } from '../documents/DocumentUploadModal';
+import { DocumentFilePreview } from '../documents/DocumentFilePreview';
 import { DocumentReplaceModal } from '../documents/DocumentReplaceModal';
 import { DocumentVersionHistoryModal } from '../documents/DocumentVersionHistoryModal';
 import { DocumentPreviewModal } from '../documents/DocumentPreviewModal';
@@ -50,7 +51,6 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [savedPreviews, setSavedPreviews] = useState<Record<string, string>>({});
   const loadSequence = useRef(0);
 
   // Filters State
@@ -61,13 +61,12 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
   const [selectedEmployee, setSelectedEmployee] = useState<EntitySearchResult | null>(null);
   const [searchEntityType, setSearchEntityType] = useState<'Employee' | 'Vehicle' | 'Company'>('Employee');
   const [uploadMode, setUploadMode] = useState<'Employee' | 'Vehicle' | 'Company'>('Employee');
-  const previewCache = useRef(new Map<string, string>());
   const entityType = searchEntityType;
   const switchCategory = (kind: 'Employee' | 'Vehicle' | 'Company') => {
     if (kind === entityType) return;
     ++loadSequence.current;
     setSummary(null); setPage(1); setTotalPages(1);
-    setSearchEntityType(kind); setUploadMode(kind); setSelectedEmployee(null); setSearch(''); setEmployeeResults([]); setDocumentTypeId(''); setSelectedIds([]); setDocuments([]); setSavedPreviews({}); setLoading(true); setExpiryRange('ALL'); setStatus('');
+    setSearchEntityType(kind); setUploadMode(kind); setSelectedEmployee(null); setSearch(''); setEmployeeResults([]); setDocumentTypeId(''); setSelectedIds([]); setDocuments([]); setLoading(true); setExpiryRange('ALL'); setStatus('');
   };
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -157,45 +156,6 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
     documentService.getExpiryDashboard({entityType}).then((data) => { if (active) setSummary(data); }).catch(() => { if (active) setSummary(null); });
     return () => { active = false; };
   }, [entityType, documents]);
-
-  useEffect(() => {
-    if (!selectedEmployee || !documents.length) {
-      setSavedPreviews({});
-      return;
-    }
-    let current = true;
-    const files = documents.filter((doc) => doc.current_file_name).slice(0, 12);
-    const cached = Object.fromEntries(files
-      .filter((doc) => previewCache.current.has(doc.id))
-      .map((doc) => [doc.id, previewCache.current.get(doc.id)!]));
-    setSavedPreviews(cached);
-    // Avoid a burst of large PDF/image transfers while the user searches.
-    const missing = files.filter((doc) => !previewCache.current.has(doc.id));
-    const load = async () => {
-      for (let index = 0; index < missing.length && current; index += 2) {
-        const results = await Promise.allSettled(missing.slice(index, index + 2).map(async (doc) => ({
-          id: doc.id,
-          url: (await clientStorageService.getAuthorizedReadUrl(doc.id)).readUrl,
-        })));
-        if (!current) return;
-        const next: Record<string, string> = {};
-        for (const result of results) {
-          if (result.status !== 'fulfilled') continue;
-          next[result.value.id] = result.value.url;
-          previewCache.current.set(result.value.id, result.value.url);
-        }
-        // Bound in-memory previews so browsing many employees does not slow the ERP.
-        while (previewCache.current.size > 12) {
-          const first = previewCache.current.keys().next().value;
-          if (first === undefined) break;
-          previewCache.current.delete(first);
-        }
-        setSavedPreviews((previous) => ({ ...previous, ...next }));
-      }
-    };
-    void load();
-    return () => { current = false; };
-  }, [selectedEmployee?.id, documents]);
 
   const viewSavedFile = async (doc: DbEntityDocument) => {
     try {
@@ -536,30 +496,24 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
         </div>
       </div>
 
-      {selectedEmployee && !loading && documents.length > 0 && (
+      {(selectedEmployee || entityType === 'Company') && !loading && documents.length > 0 && (
         <section aria-label="Matching entity documents" className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedEmployee ? selectedEmployee.name + ' — Saved Documents' : 'Saved documents matching “' + search.trim() + '”'}</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedEmployee ? selectedEmployee.name + ' — Saved Documents' : 'Company — Saved Documents'}</h3>
               {selectedEmployee && <p className="text-xs text-slate-500 mt-1">Uploaded documents appear here. Use the button to add missing documents.</p>}
             </div>
-            {selectedEmployee && <button type="button" onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700"><Upload className="w-4 h-4"/> Upload / Manage Documents</button>}
+            <div className="flex flex-wrap gap-2"><button type="button" onClick={handleSelectAll} className="inline-flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-semibold">{documents.every(item=>selectedIds.includes(item.id))?'Deselect all':'Select all'}</button><button type="button" onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700"><Upload className="w-4 h-4"/> Upload / Manage Documents</button></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {documentGroups.map(({ primary: doc, back, members }) => {
-              const preview = savedPreviews[doc.id];
-              const backPreview = back ? savedPreviews[back.id] : '';
-              const isPdf = /\.pdf$/i.test(doc.current_file_name || '');
               return <article key={doc.id} className="min-w-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800">
-                  <p className="font-bold text-sm text-slate-900 dark:text-white">{doc.document_type_name}{back ? ' (Front + Back)' : ''}</p>
+                  <div className="flex items-center gap-2"><button type="button" aria-label={'Select '+doc.document_type_name} aria-pressed={members.every(item=>selectedIds.includes(item.id))} onClick={()=>handleToggleSelect(doc.id)} className="text-blue-600 shrink-0">{members.every(item=>selectedIds.includes(item.id))?<CheckSquare className="w-4 h-4"/>:<Square className="w-4 h-4"/>}</button><p className="font-bold text-sm text-slate-900 dark:text-white">{doc.document_type_name}{back ? ' (Front + Back)' : ''}</p></div>
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 break-words">{doc.entity_name}</p>
                 </div>
                 <div className="h-44 bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                  {preview ? (isPdf
-                    ? <iframe title={`${doc.document_type_name} preview`} src={preview + '#toolbar=0&navpanes=0&scrollbar=0'} className="w-full h-full border-0 pointer-events-none"/>
-                    : <div className="flex w-full h-full gap-1"><img src={preview} alt={`${doc.document_type_name} front`} className="min-w-0 flex-1 w-1/2 h-full object-contain"/>{back && (backPreview ? <img src={backPreview} alt={`${doc.document_type_name} back`} className="min-w-0 flex-1 w-1/2 h-full object-contain"/> : <span className="flex-1 self-center text-center text-xs text-slate-500">Back loading...</span>)}</div>) :
-                    <FileWarning className="w-10 h-10 text-slate-400"/>}
+                  <div className="flex w-full h-full gap-1"><DocumentFilePreview documentId={doc.id} version={doc.current_version_number} fileName={doc.current_file_name} label={doc.document_type_name}/>{back && <DocumentFilePreview documentId={back.id} version={back.current_version_number} fileName={back.current_file_name} label={doc.document_type_name+' back'}/>}</div>
                 </div>
                 <div className="p-4 space-y-3">
                   <p title={doc.current_file_name} className="text-xs text-slate-500 truncate">{doc.current_file_name || 'Saved file'}</p>
@@ -578,7 +532,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
 
 
       {/* Main Documents Table */}
-      {!selectedEmployee && !search.trim() && <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+      {!selectedEmployee && entityType !== 'Company' && !search.trim() && <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -630,6 +584,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase tracking-wider font-bold text-[11px] bg-slate-50/50 dark:bg-slate-800/30">
                   <th className="p-3.5 w-8"></th>
+                  <th className="p-3.5">Preview</th>
                   <th className="p-3.5">Entity / Owner</th>
                   <th className="p-3.5">Type</th>
                   <th className="p-3.5">Document Details</th>
@@ -666,6 +621,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
                         </button>
                       </td>
 
+                      <td className="p-2"><button type="button" onClick={()=>setPreviewDoc(doc)} aria-label={'Preview '+doc.document_type_name} className="w-24 h-20 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden"><DocumentFilePreview documentId={doc.id} version={doc.current_version_number} fileName={doc.current_file_name} label={doc.document_type_name}/></button></td>
                       {/* Entity Name & Branch */}
                       <td className="p-3.5">
                         <div className="font-bold text-slate-900 dark:text-white">
@@ -784,8 +740,8 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
         )}
       </div>}
 
-      {!loading && selectedEmployee && documents.length === 0 && !loadError && <div className="p-8 text-center text-sm text-slate-500">
-        {selectedEmployee ? <><p className="font-bold text-slate-700 dark:text-slate-300">{selectedEmployee.name} has no uploaded documents yet.</p><button type="button" onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white"><Upload className="w-4 h-4"/> Open Document Boxes</button></> : 'No saved documents match this search.'}
+      {!loading && (selectedEmployee || entityType === 'Company') && documents.length === 0 && !loadError && <div className="p-8 text-center text-sm text-slate-500">
+        {selectedEmployee ? <><p className="font-bold text-slate-700 dark:text-slate-300">{selectedEmployee.name} has no uploaded documents yet.</p><button type="button" onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white"><Upload className="w-4 h-4"/> Open Document Boxes</button></> : 'No company documents uploaded yet.'}
       </div>}
 
       {/* Modals */}
