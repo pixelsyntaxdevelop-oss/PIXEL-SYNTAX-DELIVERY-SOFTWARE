@@ -64,9 +64,13 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
   const previewCache = useRef(new Map<string, string>());
   const entityType = searchEntityType;
   const switchCategory = (kind: 'Employee' | 'Vehicle' | 'Company') => {
+    if (kind === entityType) return;
     ++loadSequence.current;
+    setSummary(null); setPage(1); setTotalPages(1);
     setSearchEntityType(kind); setUploadMode(kind); setSelectedEmployee(null); setSearch(''); setEmployeeResults([]); setDocumentTypeId(''); setSelectedIds([]); setDocuments([]); setSavedPreviews({}); setLoading(true); setExpiryRange('ALL'); setStatus('');
   };
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [documentTypeId, setDocumentTypeId] = useState<string>('');
   const [expiryRange, setExpiryRange] = useState<string>('ALL');
   const [status, setStatus] = useState<string>('');
@@ -108,9 +112,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
     documentService.getDocumentTypes()
       .then((types) => { if (current) setDocTypes(types); })
       .catch(() => {});
-    documentService.getExpiryDashboard()
-      .then((data) => { if (current) setSummary(data); })
-      .catch(() => {});
+
     return () => { current = false; };
   }, []);
 
@@ -127,10 +129,11 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
         status: (status as any) || undefined,
         sortBy,
         sortOrder,
-        pageSize: 100,
+        page, pageSize: 100,
       });
       if (sequence === loadSequence.current) {
         setDocuments(result.documents.filter((doc) => doc.entity_type.toLowerCase() === entityType.toLowerCase()));
+        setTotalPages(Math.max(1, result.totalPages || 1));
         setSelectedIds([]);
         setLoadedSearch(debouncedSearch);
       }
@@ -146,7 +149,14 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
 
   useEffect(() => {
     loadVaultData();
-  }, [selectedEmployee?.id, entityType, documentTypeId, expiryRange, status, sortBy, sortOrder]);
+  }, [selectedEmployee?.id, entityType, documentTypeId, expiryRange, status, sortBy, sortOrder, page]);
+
+  useEffect(() => { setPage(1); }, [selectedEmployee?.id, entityType, documentTypeId, expiryRange, status, sortBy, sortOrder]);
+  useEffect(() => {
+    let active = true;
+    documentService.getExpiryDashboard({entityType}).then((data) => { if (active) setSummary(data); }).catch(() => { if (active) setSummary(null); });
+    return () => { active = false; };
+  }, [entityType, documents]);
 
   useEffect(() => {
     if (!selectedEmployee || !documents.length) {
@@ -241,11 +251,13 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
 
   const handleBulkDownload = async () => {
     if (selectedIds.length === 0) return;
+    const scopedIds = selectedIds.filter(id => documents.some(doc => doc.id === id && doc.entity_type.toLowerCase() === entityType.toLowerCase()));
+    if (!scopedIds.length) return;
     setDownloadingZip(true);
     try {
       await documentService.bulkDownloadZip(
-        selectedIds,
-        `ApexFleet_Document_Vault_Export_${Date.now()}.zip`
+        scopedIds,
+        `Pixel_Syntax_${entityType}_Documents_${Date.now()}.zip`
       );
       setFeedback(`Successfully bundled & downloaded ${selectedIds.length} documents as ZIP.`);
       setTimeout(() => setFeedback(null), 4000);
@@ -371,7 +383,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
             }`}
           >
             <p className={`text-[11px] font-bold uppercase tracking-wider ${expiryRange === 'ALL' && !status ? 'text-blue-100' : 'text-slate-500'}`}>
-              Total Vaulted (All Categories)
+              Total {entityType} Documents
             </p>
             <h3 className={`text-2xl font-black mt-1 ${expiryRange === 'ALL' && !status ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
               {summary.totalDocuments}
@@ -777,6 +789,11 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
       </div>}
 
       {/* Modals */}
+      {totalPages > 1 && !loading && <div className="flex justify-center items-center gap-3 text-sm">
+        <button type="button" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="border rounded-lg px-3 py-2 disabled:opacity-40">Previous</button>
+        <span>Page {page} of {totalPages}</span>
+        <button type="button" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="border rounded-lg px-3 py-2 disabled:opacity-40">Next</button>
+      </div>}
       <DocumentUploadModal
         isOpen={isUploadOpen}
         mode={uploadMode}
