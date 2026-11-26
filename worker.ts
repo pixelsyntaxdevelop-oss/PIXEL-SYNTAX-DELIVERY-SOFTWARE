@@ -1528,7 +1528,7 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const vehicleUploadPath = '/api/erp/storage/vehicle-document-upload';
   const companyUploadPath = '/api/erp/storage/company-document-upload';
   const isStorageDiagnostics = request.method === 'GET' && cleanPath === '/api/erp/storage/diagnostics';
-  const versionHistoryMatch = request.method === 'GET' ? cleanPath.match(/^\/api\/erp\/documents\/([^/]+)\/versions$/) : null;
+  const versionHistoryMatch = request.method === 'GET' ? cleanPath.match(/^\/api\/erp\/documents\/([^/]+)\/(versions|activity)$/) : null;
   const isCompanyLookup = request.method === 'GET' && ['/api/erp/documents/search-entities','/api/documents/search-entities'].includes(cleanPath) && new URL(request.url).searchParams.get('entityType') === 'Company';
   const isScopedExpiry = request.method === 'GET' && cleanPath === '/api/erp/documents/expiry-dashboard' && ['Company','Employee','Vehicle'].includes(new URL(request.url).searchParams.get('entityType') || '');
   const readPrefix = '/api/erp/storage/read-url/';
@@ -1552,10 +1552,18 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
 
   if (versionHistoryMatch) {
     const documentId = decodeURIComponent(versionHistoryMatch[1]);
-    const {data: doc, error: docError} = await supabase.from('entity_documents').select('id').eq('id',documentId).eq('tenant_id',tenantId).eq('is_archived',false).maybeSingle();
+    const {data: doc, error: docError} = await supabase.from('entity_documents').select('id,entity_type,entity_id').eq('id',documentId).eq('tenant_id',tenantId).eq('is_archived',false).maybeSingle();
     if (docError || !doc) return jsonResponse({error:'Document not found'},404);
     const {data: versions,error} = await supabase.from('document_versions').select('id,tenant_id,document_id,version_number,document_number,file_id,file_name,file_size,mime_type,replacement_reason,is_current,uploaded_by,uploaded_at').eq('tenant_id',tenantId).eq('document_id',documentId).order('version_number',{ascending:false});
     if (error) return jsonResponse({error:'Could not load document versions'},500);
+    if (versionHistoryMatch[2] === 'activity') {
+      return jsonResponse((versions || []).map((v:any) => ({
+        id:v.id,tenant_id:tenantId,document_id:documentId,entity_type:doc.entity_type,entity_id:doc.entity_id,
+        action:v.version_number === 1 ? 'UPLOAD' : 'REPLACE',performed_by:v.uploaded_by || 'Unknown',
+        performed_by_role:'Not recorded',details:v.replacement_reason || (v.version_number === 1 ? 'Initial registration' : 'Version replacement'),
+        version_number:v.version_number,timestamp:v.uploaded_at
+      })),200,{'Cache-Control':'private, no-store'});
+    }
     return jsonResponse(versions || [],200,{'Cache-Control':'private, no-store'});
   }
   if (isStorageDiagnostics) {
@@ -1753,6 +1761,11 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || 'document.pdf';
       objectKey = `documents/${tenantId}/${companyMode ? 'company' : vehicleMode ? 'vehicles' : 'employees'}/${entityId}/${crypto.randomUUID()}/${safeName}`;
       const bytes = await file.arrayBuffer();
+      const head = new Uint8Array(bytes).slice(0,8);
+      const valid = file.type === 'application/pdf' ? String.fromCharCode(...head.slice(0,5)) === '%PDF-'
+        : file.type === 'image/jpeg' ? head[0] === 255 && head[1] === 216 && head[2] === 255
+        : [137,80,78,71,13,10,26,10].every((value,index) => head[index] === value);
+      if (!valid) return jsonResponse({error:'The selected file is not a valid PDF, JPG or PNG.'},400);
       const checksum = crypto.createHash('sha256').update(Buffer.from(bytes)).digest('hex');
       await r2.put(objectKey, bytes, { httpMetadata: { contentType: file.type } });
       const replacementReason = String(form.get('replacementReason') || '').trim();
