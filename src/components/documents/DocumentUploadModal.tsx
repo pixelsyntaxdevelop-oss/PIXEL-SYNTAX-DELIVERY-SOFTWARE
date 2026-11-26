@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, FileText, Search, Upload, X } from 'lucide
 import { documentService, EntitySearchResult } from '../../services/documentService';
 import { clientStorageService, MAX_FILE_SIZE_BYTES } from '../../services/fileStorageService';
 import { DbDocumentType, DbEntityDocument } from '../../types/database';
+import { DocumentFilePreview } from './DocumentFilePreview';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -36,7 +37,6 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const [docs, setDocs] = useState<DbEntityDocument[]>([]);
   const [files, setFiles] = useState<Record<string, File>>({});
   const [previews, setPreviews] = useState<Record<string, string>>({});
-  const [savedPreviews, setSavedPreviews] = useState<Record<string, string>>({});
   const [expiryDates, setExpiryDates] = useState<Record<string, string>>({});
   const [expiryDirty, setExpiryDirty] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
@@ -93,13 +93,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   useEffect(() => {
     if (!isOpen || !employee) {
       setDocs([]);
-      setSavedPreviews({});
       return;
     }
     let current = true;
     setLoadingDocs(true);
     setDocs([]);
-    setSavedPreviews({});
     documentService.getDocuments({ entityType: mode, entityId: employee.id, pageSize: 500 })
       .then(async ({ documents }) => {
         if (!current) return;
@@ -107,13 +105,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         setDocs(active);
         setExpiryDates(Object.fromEntries(active.map((d) => [d.document_type_id, d.expiry_date || ''])));
         setExpiryDirty({});
-        const images = active.filter((d) => d.current_file_name).slice(0, 30);
-        const signed = await Promise.allSettled(images.map(async (d) => ({
-          id: d.id, url: (await clientStorageService.getAuthorizedReadUrl(d.id)).readUrl,
-        })));
-        if (current) setSavedPreviews(Object.fromEntries(signed
-          .filter((result): result is PromiseFulfilledResult<{ id: string; url: string }> => result.status === 'fulfilled')
-          .map((result) => [result.value.id, result.value.url])));
+
       })
       .catch((e) => { if (current) setError(e.message || 'Documents could not load'); })
       .finally(() => { if (current) setLoadingDocs(false); });
@@ -287,16 +279,14 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                 const key = type.id + ':' + slot;
                 const file = files[key];
                 const existing = slot === 'file' ? matches[0] : matches.find((d) => slotOf(d) === slot);
-                const preview = previews[key] || (existing ? savedPreviews[existing.id] : '');
+                const preview = previews[key];
                 return <div key={slot} className="min-w-0 rounded-lg border border-slate-200 dark:border-slate-700 p-2 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-bold">{slot === 'file' ? 'Document file' : slot === 'pdf' ? 'Single PDF' : slot === 'front' ? 'Front image' : 'Back image'}</span>
                     {existing && <span className="text-[10px] text-emerald-700">Saved</span>}
                   </div>
                   <div className="h-24 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center">
-                    {preview ? ((slot === 'pdf' || (slot === 'file' && (file ? file.type === 'application/pdf' : !!existing && slotOf(existing) === 'pdf')))
-                      ? <iframe src={preview + '#toolbar=0&navpanes=0&scrollbar=0'} title={labelFor(type) + ' PDF'} className="w-full h-full pointer-events-none border-0"/>
-                      : <img src={preview} alt={labelFor(type) + ' ' + slot} className="h-full w-full object-contain"/>) :
+                    {file && preview ? <DocumentFilePreview source={preview} fileName={file.name} mimeType={file.type} label={labelFor(type)+' '+slot}/> : existing ? <DocumentFilePreview documentId={existing.id} version={existing.current_version_number} fileName={existing.current_file_name} label={labelFor(type)+' '+slot}/> :
                       <div className="text-center text-slate-400"><FileText size={20} className="mx-auto mb-1"/><span className="text-[11px]">Empty</span></div>}
                   </div>
                   {existing && <button type="button" onClick={async () => {
