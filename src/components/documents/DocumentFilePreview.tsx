@@ -38,7 +38,7 @@ export function DocumentFilePreview({source,documentId,version,fileName,mimeType
     let active=true;
     let task:any;
     const controller=new AbortController();
-    setImage('');setError('');setPdf(null);setPage(1);setPageCount(0);setLoading(true);
+    setImage('');setError('');setPdf(null);setPage(1);setPageCount(0);setLoading(true);setRendering(false);
     if (!visible || (!source && !documentId)) return;
     const load=async()=>{
       try {
