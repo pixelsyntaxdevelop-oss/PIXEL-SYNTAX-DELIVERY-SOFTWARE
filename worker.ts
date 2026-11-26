@@ -1526,10 +1526,11 @@ async function handleUserDiagnostic(request: Request, env: any): Promise<Respons
 async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cleanPath: string): Promise<Response | null> {
   const uploadPath = '/api/erp/storage/document-upload';
   const vehicleUploadPath = '/api/erp/storage/vehicle-document-upload';
+  const companyUploadPath = '/api/erp/storage/company-document-upload';
   const readPrefix = '/api/erp/storage/read-url/';
   const expiryPrefix = '/api/erp/storage/document-expiry/';
   const archivePrefix = '/api/erp/storage/document-archive/';
-  if (cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
+  if (cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
       !(request.method === 'GET' && cleanPath === '/api/erp/documents')) return null;
 
   const supabase = getWorkerSupabaseClient(env);
@@ -1635,14 +1636,16 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
     return jsonResponse(data, 200);
   }
 
-  if (request.method === 'POST' && (cleanPath === uploadPath || cleanPath === vehicleUploadPath)) {
+  if (request.method === 'POST' && (cleanPath === uploadPath || cleanPath === vehicleUploadPath || cleanPath === companyUploadPath)) {
     if (!r2) return jsonResponse({ error: 'Document storage unavailable' }, 503);
     const vehicleMode = cleanPath === vehicleUploadPath;
+    const companyMode = cleanPath === companyUploadPath;
+    const documentEntityType = companyMode ? 'Company' : vehicleMode ? 'Vehicle' : 'Employee';
     let objectKey = '';
     try {
       const form = await request.formData();
       const file = form.get('file');
-      const entityId = String(form.get(vehicleMode ? 'vehicleId' : 'employeeId') || '');
+      const entityId = companyMode ? tenantId : String(form.get(vehicleMode ? 'vehicleId' : 'employeeId') || '');
       const typeId = String(form.get('documentTypeId') || '');
       const existingId = String(form.get('documentId') || '');
       if (!(file instanceof File) || !entityId || !typeId) {
@@ -1652,13 +1655,13 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
           file.size <= 0 || file.size > 10 * 1024 * 1024) {
         return jsonResponse({ error: 'Upload a PDF, JPG, or PNG under 10 MB' }, 400);
       }
-      let entityQuery = supabase.from(vehicleMode ? 'vehicles' : 'employees').select('id')
-        .eq('id', entityId).eq('tenant_id', tenantId);
-      if (!vehicleMode) entityQuery = entityQuery.eq('is_archived', false);
+      let entityQuery = supabase.from(companyMode ? 'tenants' : vehicleMode ? 'vehicles' : 'employees').select('id').eq('id', entityId);
+      if (!companyMode) entityQuery = entityQuery.eq('tenant_id', tenantId);
+      if (!companyMode && !vehicleMode) entityQuery = entityQuery.eq('is_archived', false);
       const { data: entity } = await entityQuery.maybeSingle();
       const { data: docType } = await supabase.from('document_types').select('id,category')
         .eq('id', typeId).eq('tenant_id', tenantId).eq('is_active', true).maybeSingle();
-      const validType = vehicleMode
+      const validType = companyMode ? docType?.category === 'COMPANY' : vehicleMode
         ? (docType?.category === 'VEHICLE' || typeId === 'dt_mulkiya')
         : (['EMPLOYEE','OTHER'].includes(docType?.category) && typeId !== 'dt_mulkiya');
       if (!entity || !docType || !validType) {
@@ -1666,19 +1669,19 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
       }
       if (existingId) {
         const { data: existing } = await supabase.from('entity_documents').select('id')
-          .eq('id', existingId).eq('tenant_id', tenantId).eq('entity_type', vehicleMode ? 'Vehicle' : 'Employee')
+          .eq('id', existingId).eq('tenant_id', tenantId).eq('entity_type', documentEntityType)
           .eq('entity_id', entityId).eq('document_type_id', typeId).eq('is_archived', false).maybeSingle();
         if (!existing) return jsonResponse({ error: 'Existing document does not belong to this entity' }, 400);
       }
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || 'document.pdf';
-      objectKey = `documents/${tenantId}/${vehicleMode ? 'vehicles' : 'employees'}/${entityId}/${crypto.randomUUID()}/${safeName}`;
+      objectKey = `documents/${tenantId}/${companyMode ? 'company' : vehicleMode ? 'vehicles' : 'employees'}/${entityId}/${crypto.randomUUID()}/${safeName}`;
       const bytes = await file.arrayBuffer();
       const checksum = crypto.createHash('sha256').update(Buffer.from(bytes)).digest('hex');
       await r2.put(objectKey, bytes, { httpMetadata: { contentType: file.type } });
       const { data: document, error } = await supabase.rpc(
-        vehicleMode ? 'allied_save_vehicle_document' : 'allied_save_employee_document', {
+        companyMode ? 'pixel_save_company_document' : vehicleMode ? 'allied_save_vehicle_document' : 'allied_save_employee_document', {
           p_tenant_id: tenantId,
-          [vehicleMode ? 'p_vehicle_id' : 'p_employee_id']: entityId,
+          [companyMode ? 'p_company_id' : vehicleMode ? 'p_vehicle_id' : 'p_employee_id']: entityId,
           p_document_type_id: typeId,
           p_existing_document_id: existingId || null,
           p_file_name: safeName,
@@ -1920,6 +1923,11 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
   if (request.method === 'GET' && (cleanPath === '/api/erp/documents/search-entities' || cleanPath === '/api/documents/search-entities')) {
     const q = (url.searchParams.get('q') || '').trim();
     const entityType = url.searchParams.get('entityType') || 'Employee';
+    if (entityType === 'Company') {
+      const { data: company, error } = await supabase.from('tenants').select('id,name,code').eq('id', tenantId).maybeSingle();
+      if (error || !company) return jsonResponse({ error: 'Company not found' }, 404);
+      return jsonResponse([{ id: company.id, entityId: company.id, name: company.name, code: company.code, type: 'Company' }]);
+    }
     if (!['Employee', 'Vehicle'].includes(entityType)) return jsonResponse([]);
     if (q.length < 2) return jsonResponse([]);
     const escaped = q.replace(/[%,()]/g, ' ').trim();
