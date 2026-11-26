@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { documentService } from '../../services/documentService';
 import { clientStorageService } from '../../services/fileStorageService';
+import { DocumentFilePreview } from './DocumentFilePreview';
 import { DbEntityDocument, DbDocumentActivity, DbDocumentVersion } from '../../types/database';
 
 interface DocumentPreviewModalProps {
@@ -285,10 +286,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
               <div className="lg:col-span-7 space-y-3">
                 {pairedDocument && <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Front</p>}
                 <div className="p-2 bg-slate-900 rounded-2xl border border-slate-800 shadow-inner flex items-center justify-center min-h-[380px] max-h-[480px] overflow-hidden relative group">
-                  {previewUrl ? (previewUrl.startsWith('data:application/pdf') ?
-                    <iframe title={document.document_type_name} src={previewUrl + '#toolbar=0'} className="w-full h-[460px] border-0 rounded-xl" /> :
-                    <img src={previewUrl} alt={document.document_type_name} className="w-full h-full object-contain rounded-xl max-h-[460px]" />
-                  ) : <p className="text-sm text-slate-300">{previewError || 'Loading saved document...'}</p>}
+                  {previewUrl ? <DocumentFilePreview source={previewUrl} fileName={document.current_file_name} label={document.document_type_name} full/> : <p className="text-sm text-slate-300">{previewError || 'Loading saved document...'}</p>}
                   <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-[11px] font-mono text-slate-300 flex items-center gap-2 border border-white/10">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                     Secure document storage
@@ -298,7 +296,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                 {pairedDocument && <div className="space-y-2">
                   <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Back</p>
                   <div className="p-2 bg-slate-900 rounded-2xl min-h-[220px] flex items-center justify-center">
-                    {pairedUrl ? <img src={pairedUrl} alt={document.document_type_name + ' back'} className="max-h-[400px] w-full object-contain rounded-xl"/> : <p className="text-sm text-slate-300">{previewError || 'Loading back image...'}</p>}
+                    {pairedUrl ? <DocumentFilePreview source={pairedUrl} fileName={pairedDocument.current_file_name} label={document.document_type_name+' back'} full/> : <p className="text-sm text-slate-300">{previewError || 'Loading back image...'}</p>}
                   </div>
                   <button type="button" onClick={() => handleCopyImage(pairedUrl, pairedDocument)} disabled={!pairedUrl || copying} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-700 text-xs font-bold border border-slate-200 dark:border-slate-600 disabled:opacity-50"><Copy className="inline w-3.5 h-3.5 mr-1"/>Copy Back Image</button>
                 </div>}
