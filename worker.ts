@@ -16,6 +16,7 @@
 import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import { handleDemoPayrollWorkerRoutes } from './server/demoPayrollWorker';
+import { tenantRows } from './server/tenantPagination';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AUTHORITATIVE_MASTER_EMPLOYEES } from './server/authoritativeEmployees';
 import {
@@ -1844,15 +1845,9 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
 
   // 1. GET /api/erp/master-employees/stats
   if (request.method === 'GET' && cleanPath === '/api/erp/master-employees/stats') {
-    const { data: emps, error } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .eq('is_archived', false);
-
-    if (error) return jsonResponse({ error: error.message }, 500);
-
-    const list = emps || [];
+    let list:any[];
+    try { list=await tenantRows(supabase,'employees',tenantId,'id,project_id,project_name,current_status,status,is_active,is_archived',q=>q.eq('is_archived',false)); }
+    catch(err:any){return jsonResponse({error:err.message},503);}
     // Use the authoritative active employee-project assignment registry, not stale labels.
     // Badge counts must match the employee rows returned when a project chip is clicked.
     // Keep assignment-registry counts separate: historical employee project labels and
@@ -1868,12 +1863,9 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
     }
     const authoritativeAssignmentCounts: Record<string, number> = {};
     const eligibleIds = new Set(list.map((e: any) => String(e.id)));
-    const { data: activeProjectAssignments, error: projectCountError } = await supabase
-      .from('employee_project_assignments')
-      .select('employee_id, project_id')
-      .eq('tenant_id', tenantId)
-      .eq('status', 'ACTIVE');
-    if (projectCountError) return jsonResponse({ error: projectCountError.message }, 500);
+    let activeProjectAssignments:any[];
+    try {activeProjectAssignments=await tenantRows(supabase,'employee_project_assignments',tenantId,'id,employee_id,project_id',q=>q.eq('status','ACTIVE'));}
+    catch(err:any){return jsonResponse({error:err.message},503);}
     const seenProjectEmployees = new Set<string>();
     for (const a of activeProjectAssignments || []) {
       if (!a.project_id || !eligibleIds.has(String(a.employee_id))) continue;
@@ -2133,18 +2125,10 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
       cleanPath === '/api/master-employees' ||
       cleanPath === '/api/master-employees/search')
   ) {
-    let q = supabase.from('employees').select('*').eq('tenant_id', tenantId);
-    
-    if (url.searchParams.get('includeArchived') !== 'true') {
-      q = q.eq('is_archived', false);
-    }
-
-    const { data: rawList, error } = await q.order('created_at', { ascending: false }).order('employee_code', { ascending: false });
-    if (error) return jsonResponse({ error: error.message }, 500);
-
-    const sourceData = (rawList && rawList.length > 0)
-      ? rawList
-      : ((tenantId === 'company_pixel_syntax' || !tenantId) ? AUTHORITATIVE_MASTER_EMPLOYEES : []);
+    let sourceData:any[];
+    try {sourceData=await tenantRows(supabase,'employees',tenantId,'*',q=>url.searchParams.get('includeArchived')==='true'?q:q.eq('is_archived',false));}
+    catch(err:any){return jsonResponse({error:err.message},503);}
+    sourceData.sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))||String(b.employee_code||'').localeCompare(String(a.employee_code||'')));
 
     let list = sourceData.map((e: any) => {
       const curCanonical = resolveEmployeeRecordStatus(e);
@@ -2255,7 +2239,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
 
     if (url.searchParams.get('paginated') === 'true' || url.searchParams.get('page')) {
       const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
-      const pageSize = Math.max(1, parseInt(url.searchParams.get('pageSize') || url.searchParams.get('limit') || '25', 10));
+      const pageSize = Math.min(500,Math.max(1, parseInt(url.searchParams.get('pageSize') || url.searchParams.get('limit') || '25', 10)||25));
       const total = list.length;
       const totalPages = Math.ceil(total / pageSize) || 1;
       const startIndex = (page - 1) * pageSize;
