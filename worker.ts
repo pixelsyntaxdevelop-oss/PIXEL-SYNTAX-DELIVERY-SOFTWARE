@@ -1755,19 +1755,21 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
       const bytes = await file.arrayBuffer();
       const checksum = crypto.createHash('sha256').update(Buffer.from(bytes)).digest('hex');
       await r2.put(objectKey, bytes, { httpMetadata: { contentType: file.type } });
-      const { data: document, error } = await supabase.rpc(
-        companyMode ? 'pixel_save_company_document' : vehicleMode ? 'allied_save_vehicle_document' : 'allied_save_employee_document', {
-          p_tenant_id: tenantId,
-          [companyMode ? 'p_company_id' : vehicleMode ? 'p_vehicle_id' : 'p_employee_id']: entityId,
-          p_document_type_id: typeId,
-          p_existing_document_id: existingId || null,
-          p_file_name: safeName,
-          p_mime_type: file.type,
-          p_file_size: file.size,
-          p_storage_path: objectKey,
-          p_checksum: checksum,
-          p_actor: session.userId,
-        });
+      const replacementReason = String(form.get('replacementReason') || '').trim();
+      const renewal = Boolean(existingId && replacementReason);
+      const metadata: Record<string,string> = { replacement_reason:replacementReason };
+      for (const [formKey,dbKey] of [['documentNumber','document_number'],['issueDate','issue_date'],['expiryDate','expiry_date']]) {
+        if (form.has(formKey)) metadata[dbKey] = String(form.get(formKey) || '');
+      }
+      const commonArgs = {
+        p_tenant_id:tenantId,p_document_type_id:typeId,p_existing_document_id:existingId || null,
+        p_file_name:safeName,p_mime_type:file.type,p_file_size:file.size,p_storage_path:objectKey,p_checksum:checksum,p_actor:session.userId,
+      };
+      const {data:document,error} = renewal
+        ? await supabase.rpc('pixel_renew_document',{...commonArgs,p_entity_type:documentEntityType,p_entity_id:entityId,p_metadata:metadata})
+        : await supabase.rpc(companyMode ? 'pixel_save_company_document' : vehicleMode ? 'allied_save_vehicle_document' : 'allied_save_employee_document',{
+            ...commonArgs,[companyMode ? 'p_company_id' : vehicleMode ? 'p_vehicle_id' : 'p_employee_id']:entityId
+          });
       if (error || !document) throw new Error(error?.message || 'Document metadata could not be saved');
       return jsonResponse({ document }, 201);
     } catch (err: any) {
