@@ -1528,12 +1528,13 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const vehicleUploadPath = '/api/erp/storage/vehicle-document-upload';
   const companyUploadPath = '/api/erp/storage/company-document-upload';
   const isStorageDiagnostics = request.method === 'GET' && cleanPath === '/api/erp/storage/diagnostics';
+  const versionHistoryMatch = request.method === 'GET' ? cleanPath.match(/^\/api\/erp\/documents\/([^/]+)\/versions$/) : null;
   const isCompanyLookup = request.method === 'GET' && ['/api/erp/documents/search-entities','/api/documents/search-entities'].includes(cleanPath) && new URL(request.url).searchParams.get('entityType') === 'Company';
   const isScopedExpiry = request.method === 'GET' && cleanPath === '/api/erp/documents/expiry-dashboard' && ['Company','Employee','Vehicle'].includes(new URL(request.url).searchParams.get('entityType') || '');
   const readPrefix = '/api/erp/storage/read-url/';
   const expiryPrefix = '/api/erp/storage/document-expiry/';
   const archivePrefix = '/api/erp/storage/document-archive/';
-  if (!isStorageDiagnostics && !isCompanyLookup && !isScopedExpiry && cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
+  if (!versionHistoryMatch && !isStorageDiagnostics && !isCompanyLookup && !isScopedExpiry && cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
       !(request.method === 'GET' && cleanPath === '/api/erp/documents')) return null;
 
   const supabase = getWorkerSupabaseClient(env);
@@ -1549,6 +1550,14 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const r2 = env?.R2_BUCKET;
   const url = new URL(request.url);
 
+  if (versionHistoryMatch) {
+    const documentId = decodeURIComponent(versionHistoryMatch[1]);
+    const {data: doc, error: docError} = await supabase.from('entity_documents').select('id').eq('id',documentId).eq('tenant_id',tenantId).eq('is_archived',false).maybeSingle();
+    if (docError || !doc) return jsonResponse({error:'Document not found'},404);
+    const {data: versions,error} = await supabase.from('document_versions').select('id,tenant_id,document_id,version_number,document_number,file_id,file_name,file_size,mime_type,replacement_reason,is_current,uploaded_by,uploaded_at').eq('tenant_id',tenantId).eq('document_id',documentId).order('version_number',{ascending:false});
+    if (error) return jsonResponse({error:'Could not load document versions'},500);
+    return jsonResponse(versions || [],200,{'Cache-Control':'private, no-store'});
+  }
   if (isStorageDiagnostics) {
     if (!r2) return jsonResponse({error:'R2 storage binding unavailable'},503);
     try {
@@ -1657,9 +1666,10 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
     const { data: doc, error: docError } = await supabase.from('entity_documents')
       .select('id').eq('id', documentId).eq('tenant_id', tenantId).eq('is_archived', false).maybeSingle();
     if (docError || !doc) return jsonResponse({ error: 'Document not found' }, 404);
-    const { data: version, error: versionError } = await supabase.from('document_versions')
-      .select('storage_path,file_name,mime_type').eq('document_id', documentId)
-      .eq('tenant_id', tenantId).eq('is_current', true).maybeSingle();
+    const versionId = url.searchParams.get('versionId');
+    let versionQuery = supabase.from('document_versions').select('storage_path,file_name,mime_type').eq('document_id',documentId).eq('tenant_id',tenantId);
+    versionQuery = versionId ? versionQuery.eq('id',versionId) : versionQuery.eq('is_current',true);
+    const {data: version,error: versionError} = await versionQuery.maybeSingle();
     if (versionError || !version) return jsonResponse({ error: 'Saved file not found' }, 404);
     const object = await r2.get(version.storage_path);
     if (!object) return jsonResponse({ error: 'Stored file unavailable' }, 404);
