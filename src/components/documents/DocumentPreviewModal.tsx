@@ -67,16 +67,18 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
       clientStorageService.getAuthorizedReadUrl(document.id)
         .then((file) => { if (current) setPreviewUrl(file.readUrl); })
         .catch((err) => { if (current) setPreviewError(err?.message || 'Saved file could not load'); });
-      setLoading(true);
-      Promise.all([
+      setLoading(true); setVersions([]); setActivities([]); setSelectedVersion(null); setActiveTab('preview');
+      Promise.allSettled([
         documentService.getDocumentActivity(document.id),
         documentService.getDocumentVersions(document.id),
       ])
         .then(([acts, vers]) => {
-          setActivities(acts);
-          setVersions(vers);
-          const current = vers.find((v) => v.is_current) || vers[0] || null;
-          setSelectedVersion(current);
+          if (!current) return;
+          if (acts.status === 'fulfilled') setActivities(acts.value);
+          if (vers.status === 'fulfilled') {
+            setVersions(vers.value);
+            setSelectedVersion(vers.value.find(v => v.is_current) || vers.value[0] || null);
+          }
         })
         .catch(console.error)
         .finally(() => { if (current) setLoading(false); });
@@ -90,8 +92,8 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
     setDownloading(true);
     try {
       await clientStorageService.triggerFileDownload(target.id, undefined, target.current_file_name);
-    } catch (err) {
-      console.error('Authorized download failed:', err);
+    } catch (err: any) {
+      setPreviewError(err?.message || 'Document download failed');
     } finally {
       setDownloading(false);
     }
@@ -362,6 +364,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
             </div>
           )}
 
+          {previewError && <p role="alert" className="text-xs text-red-600">{previewError}</p>}
           {activeTab === 'versions' && (
             <div className="space-y-3">
               {versions.map((ver) => (
@@ -395,7 +398,8 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                     </div>
                     <button
                       onClick={async () => {
-                        await clientStorageService.triggerFileDownload(document.id, ver.id, ver.file_name);
+                        try { await clientStorageService.triggerFileDownload(document.id, ver.id, ver.file_name); }
+                        catch (err: any) { setPreviewError(err?.message || 'Version download failed'); }
                       }}
                       className="px-3 py-1.5 bg-white dark:bg-slate-700 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-600 flex items-center gap-1"
                     >
