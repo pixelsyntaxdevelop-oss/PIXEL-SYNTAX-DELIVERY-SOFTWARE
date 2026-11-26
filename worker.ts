@@ -16,6 +16,7 @@
 import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import { handleDemoPayrollWorkerRoutes } from './server/demoPayrollWorker';
+import { tenantRows } from './server/tenantPagination';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AUTHORITATIVE_MASTER_EMPLOYEES } from './server/authoritativeEmployees';
 import {
@@ -67,7 +68,7 @@ import {
   replaceSimAuthoritative,
   returnAndAssignSimAuthoritative,
   repairStaleSimCustodyPointersAuthoritative,
-  isSamePhone,
+  isSamePhone, normalizePhoneForMatching,
 } from './server/simAssignmentService';
 import {
   getAuthoritativePassportCustody,
@@ -1844,15 +1845,9 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
 
   // 1. GET /api/erp/master-employees/stats
   if (request.method === 'GET' && cleanPath === '/api/erp/master-employees/stats') {
-    const { data: emps, error } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .eq('is_archived', false);
-
-    if (error) return jsonResponse({ error: error.message }, 500);
-
-    const list = emps || [];
+    let list:any[];
+    try { list=await tenantRows(supabase,'employees',tenantId,'id,project_id,project_name,current_status,status,is_active,is_archived',q=>q.eq('is_archived',false)); }
+    catch(err:any){return jsonResponse({error:err.message},503);}
     // Use the authoritative active employee-project assignment registry, not stale labels.
     // Badge counts must match the employee rows returned when a project chip is clicked.
     // Keep assignment-registry counts separate: historical employee project labels and
@@ -1868,12 +1863,9 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
     }
     const authoritativeAssignmentCounts: Record<string, number> = {};
     const eligibleIds = new Set(list.map((e: any) => String(e.id)));
-    const { data: activeProjectAssignments, error: projectCountError } = await supabase
-      .from('employee_project_assignments')
-      .select('employee_id, project_id')
-      .eq('tenant_id', tenantId)
-      .eq('status', 'ACTIVE');
-    if (projectCountError) return jsonResponse({ error: projectCountError.message }, 500);
+    let activeProjectAssignments:any[];
+    try {activeProjectAssignments=await tenantRows(supabase,'employee_project_assignments',tenantId,'id,employee_id,project_id',q=>q.eq('status','ACTIVE'));}
+    catch(err:any){return jsonResponse({error:err.message},503);}
     const seenProjectEmployees = new Set<string>();
     for (const a of activeProjectAssignments || []) {
       if (!a.project_id || !eligibleIds.has(String(a.employee_id))) continue;
@@ -2133,18 +2125,10 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
       cleanPath === '/api/master-employees' ||
       cleanPath === '/api/master-employees/search')
   ) {
-    let q = supabase.from('employees').select('*').eq('tenant_id', tenantId);
-    
-    if (url.searchParams.get('includeArchived') !== 'true') {
-      q = q.eq('is_archived', false);
-    }
-
-    const { data: rawList, error } = await q.order('created_at', { ascending: false }).order('employee_code', { ascending: false });
-    if (error) return jsonResponse({ error: error.message }, 500);
-
-    const sourceData = (rawList && rawList.length > 0)
-      ? rawList
-      : ((tenantId === 'company_pixel_syntax' || !tenantId) ? AUTHORITATIVE_MASTER_EMPLOYEES : []);
+    let sourceData:any[];
+    try {sourceData=await tenantRows(supabase,'employees',tenantId,'*',q=>url.searchParams.get('includeArchived')==='true'?q:q.eq('is_archived',false));}
+    catch(err:any){return jsonResponse({error:err.message},503);}
+    sourceData.sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))||String(b.employee_code||'').localeCompare(String(a.employee_code||'')));
 
     let list = sourceData.map((e: any) => {
       const curCanonical = resolveEmployeeRecordStatus(e);
@@ -2255,7 +2239,7 @@ async function handleMasterEmployeesAndAttendance(request: Request, env: any, cl
 
     if (url.searchParams.get('paginated') === 'true' || url.searchParams.get('page')) {
       const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
-      const pageSize = Math.max(1, parseInt(url.searchParams.get('pageSize') || url.searchParams.get('limit') || '25', 10));
+      const pageSize = Math.min(500,Math.max(1, parseInt(url.searchParams.get('pageSize') || url.searchParams.get('limit') || '25', 10)||25));
       const total = list.length;
       const totalPages = Math.ceil(total / pageSize) || 1;
       const startIndex = (page - 1) * pageSize;
@@ -8449,77 +8433,30 @@ export default {
           const provFilter = (searchParams.get('provider') || searchParams.get('vendor') || '').toLowerCase().trim();
           const stateFilter = (searchParams.get('state') || '').toLowerCase().trim();
 
-          let { data: allSims, error: fetchErr } = await supabase
-            .from('sim_cards')
-            .select('*')
-            .eq('tenant_id', tenantId)
-            .order('created_at', { ascending: false });
-
-          if (fetchErr && fetchErr.message && fetchErr.message.includes('created_at')) {
-            const retryFetch = await supabase
-              .from('sim_cards')
-              .select('*')
-              .eq('tenant_id', tenantId);
-            allSims = retryFetch.data;
-            fetchErr = retryFetch.error;
-          }
-
-          if (fetchErr) {
-            return jsonResponse({ error: fetchErr.message }, 500);
-          }
-
-          // Safely correct imported company_pixel_syntax DU SIM records to ETISALAT
-          if (tenantId === 'company_pixel_syntax' && allSims && allSims.length > 0) {
-            const duSims = allSims.filter((s: any) => {
-              const p = String(s.provider || s.vendor || '').toUpperCase().trim();
-              return p === 'DU';
-            });
-            if (duSims.length > 0) {
-              const duIds = duSims.map((s: any) => s.id);
-              try {
-                await supabase
-                  .from('sim_cards')
-                  .update({ provider: 'ETISALAT', updated_at: new Date().toISOString() })
-                  .in('id', duIds)
-                  .eq('tenant_id', 'company_pixel_syntax');
-                for (const s of allSims) {
-                  const p = String(s.provider || s.vendor || '').toUpperCase().trim();
-                  if (p === 'DU') {
-                    s.provider = 'ETISALAT';
-                    if (s.vendor) s.vendor = 'ETISALAT';
-                  }
-                }
-              } catch (updateErr) {
-                console.error('Safe update of company_pixel_syntax DU SIMs to ETISALAT error:', updateErr);
-              }
+          let allSims:any[],activeEmpsWithSims:any[],allSimAsgns:any[],branches:any[];
+          try {
+            [allSims,activeEmpsWithSims,allSimAsgns,branches]=await Promise.all([
+              tenantRows(supabase,'sim_cards',tenantId),
+              tenantRows(supabase,'employees',tenantId,'id,employee_code,full_name,current_sim_id,current_sim_number,project_name,joining_date,current_status'),
+              tenantRows(supabase,'sim_assignments',tenantId),
+              tenantRows(supabase,'branches',tenantId,'id,city')
+            ]);
+          } catch(err:any){return jsonResponse({error:err.message},503);}
+          allSims.sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))||String(b.id).localeCompare(String(a.id)));
+          allSimAsgns.sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+          const cities=new Map(branches.map(b=>[b.id,b.city]));
+          const activeByCard=new Map<string,any[]>(),activeByPhone=new Map<string,any[]>(),returnedByCard=new Map<string,any>(),returnedByPhone=new Map<string,any>();
+          const pointersByCard=new Map<string,any[]>(),pointersByPhone=new Map<string,any[]>();
+          const add=(m:Map<string,any[]>,k:string,row:any)=>{if(k){const group=m.get(k)||[];group.push(row);m.set(k,group);}};
+          for(const a of allSimAsgns){
+            const key=String(a.sim_card_id||a.sim_id||''),phone=normalizePhoneForMatching(a.mobile_number);
+            if(['ACTIVE','ASSIGNED'].includes(String(a.status||a.assignment_status||'').toUpperCase())){add(activeByCard,key,a);if(!key)add(activeByPhone,phone,a);}
+            else if(String(a.status||a.assignment_status||'').toUpperCase()==='RETURNED'){
+              if(key&&!returnedByCard.has(key))returnedByCard.set(key,a);
+              if(!key&&phone&&!returnedByPhone.has(phone))returnedByPhone.set(phone,a);
             }
           }
-
-          // Query active employees with SIMs and any sim_assignments to reconcile custody authoritatively
-          let activeEmpsWithSims: any[] = [];
-          let allSimAsgns: any[] = [];
-          try {
-            const { data: empsData, error: empsError } = await supabase
-              .from('employees')
-              .select('id, employee_code, full_name, current_sim_id, current_sim_number, project_name, joining_date, current_status')
-              .eq('tenant_id', tenantId);
-            if (empsError) return jsonResponse({ error: 'Cannot verify SIM custodians: ' + empsError.message }, 503);
-            if (Array.isArray(empsData)) activeEmpsWithSims = empsData;
-          } catch (e) {
-            console.warn('Error fetching employees with SIMs in sims route:', e);
-          }
-
-          try {
-            const { data: asgnsData, error: asgnsError } = await supabase
-              .from('sim_assignments')
-              .select('*')
-              .eq('tenant_id', tenantId)
-              .order('created_at', { ascending: false });
-            if (asgnsError) return jsonResponse({ error: 'Cannot verify SIM assignments: ' + asgnsError.message }, 503);
-            if (Array.isArray(asgnsData)) allSimAsgns = asgnsData;
-          } catch (e) {
-            console.warn('Error fetching sim_assignments in sims route:', e);
-          }
+          for(const emp of activeEmpsWithSims){const key=String(emp.current_sim_id||'');add(pointersByCard,key,emp);if(!key)add(pointersByPhone,normalizePhoneForMatching(emp.current_sim_number),emp);}
 
           // Resolve active custody by stable employee ID, including employees whose legacy
           // current_sim_number pointer is missing. Never guess the holder by name.
@@ -8533,8 +8470,7 @@ export default {
             ...allSimAsgns.flatMap((row: any) => [row.assigned_by, row.returned_by, row.returned_to])
           ]);
           let list = (allSims || []).map((s: any) => {
-            const isAlliedDu = tenantId === 'company_pixel_syntax' && (!s.provider || s.provider === 'DU' || s.vendor === 'DU');
-            const resolvedProvider = isAlliedDu ? 'ETISALAT' : (s.provider || s.vendor || (tenantId === 'company_pixel_syntax' ? 'ETISALAT' : 'DU'));
+            const resolvedProvider = s.provider || s.vendor || 'Unknown';
 
             let currentEmpId = s.current_employee_id || null;
             let currentEmpName = s.current_employee_name || null;
@@ -8546,15 +8482,9 @@ export default {
             // Employee Management and SIM Management must display the same current custodian.
             // Prefer a single active assignment; otherwise a single live employee pointer.
             // Never use an employee joining date, guessed name, or stale card label.
-            const activeForCard = allSimAsgns.filter((a: any) =>
-              ['ACTIVE', 'ASSIGNED'].includes(String(a.status || a.assignment_status || '').toUpperCase()) &&
-              (String(a.sim_card_id || a.sim_id || '') === String(s.id) ||
-                (a.mobile_number && s.mobile_number && isSamePhone(a.mobile_number, s.mobile_number)))
-            );
-            const pointerEmployees = activeEmpsWithSims.filter((e: any) =>
-              (e.current_sim_id && String(e.current_sim_id) === String(s.id)) ||
-              (e.current_sim_number && s.mobile_number && isSamePhone(e.current_sim_number, s.mobile_number))
-            );
+            const phone=normalizePhoneForMatching(s.mobile_number);
+            const activeForCard=[...(activeByCard.get(String(s.id))||[]),...(activeByPhone.get(phone)||[])];
+            const pointerEmployees=[...(pointersByCard.get(String(s.id))||[]),...(pointersByPhone.get(phone)||[])];
             const activeIds = [...new Set(activeForCard.map((a: any) => String(a.employee_id || '')).filter(Boolean))];
             const pointerIds = [...new Set(pointerEmployees.map((e: any) => String(e.id || '')).filter(Boolean))];
             const verifiedActive = activeIds.length === 1 ? employeeById.get(activeIds[0]) : null;
@@ -8591,15 +8521,12 @@ export default {
               ? formatSimStaffName(s.last_returned_by, simListActors) : null;
 
             if (!lastEmpId) {
-              const matchedReturnedAsgn = allSimAsgns.find((a: any) =>
-                (a.status === 'RETURNED' || a.assignment_status === 'RETURNED') &&
-                (a.sim_card_id === s.id || a.sim_id === s.id || (a.mobile_number && s.mobile_number && isSamePhone(a.mobile_number, s.mobile_number)))
-              );
+              const matchedReturnedAsgn=returnedByCard.get(String(s.id))||returnedByPhone.get(phone);
               if (matchedReturnedAsgn) {
                 lastEmpId = matchedReturnedAsgn.employee_id;
                 lastEmpName = matchedReturnedAsgn.employee_name;
                 lastEmpCode = matchedReturnedAsgn.employee_code;
-                lastReturnedDate = matchedReturnedAsgn.returned_date || matchedReturnedAsgn.returned_at?.slice(0, 10);
+                lastReturnedDate = matchedReturnedAsgn.return_date || matchedReturnedAsgn.returned_date || matchedReturnedAsgn.returned_at?.slice(0, 10);
                 lastReturnReason = matchedReturnedAsgn.return_reason || 'Rider returned SIM card to depot inventory';
                 lastReturnedBy = formatSimStaffName(matchedReturnedAsgn.returned_by || matchedReturnedAsgn.returned_to, simListActors);
               }
@@ -8619,6 +8546,7 @@ export default {
               sim_serial_number: s.sim_serial_number || s.sim_number || s.iccid || '',
               provider: resolvedProvider,
               vendor: resolvedProvider,
+              state: cities.get(s.branch_id) || s.state || 'State not set',
               plan: s.plan || s.plan_name || 'Enterprise 25GB',
               monthly_cost: Number(s.monthly_cost) || Number(s.monthly_package_amount) || Number(s.monthly_bill_aed) || 100,
               monthly_package_amount: Number(s.monthly_package_amount) || Number(s.monthly_cost) || Number(s.monthly_bill_aed) || 100,
@@ -8687,50 +8615,35 @@ export default {
 
         // 3. GET /api/erp/sims/dashboard
         if (request.method === 'GET' && cleanPath === '/api/erp/sims/dashboard') {
-          const { data: allSims } = await supabase.from('sim_cards').select('*').eq('tenant_id', tenantId);
-          let activeEmpsWithSims: any[] = [];
+          let list:any[],emps:any[],activeAssignments:any[],branches:any[];
           try {
-            const { data: empsData } = await supabase
-              .from('employees')
-              .select('id, employee_code, full_name, current_sim_id, current_sim_number, current_status, project_name')
-              .eq('tenant_id', tenantId);
-            if (Array.isArray(empsData)) activeEmpsWithSims = empsData;
-          } catch {}
-
-          const list = allSims || [];
-          const totalSims = list.length;
-          const { data: activeAssignments, error: assignmentsError } = await supabase
-            .from('sim_assignments')
-            .select('sim_card_id, employee_id, status')
-            .eq('tenant_id', tenantId)
-            .eq('status', 'ACTIVE');
-          if (assignmentsError) return jsonResponse({ error: assignmentsError.message }, 500);
-          const validEmployeeIds = new Set(activeEmpsWithSims.map((e: any) => String(e.id)));
-          const isAssignedCard = (s: any) => {
-            if (String(s.status || '').toLowerCase() === 'lost') return false;
-            const activeIds = [...new Set((activeAssignments || [])
-              .filter((a: any) => String(a.sim_card_id) === String(s.id))
-              .map((a: any) => String(a.employee_id || '')).filter(Boolean))];
-            if (activeIds.length > 0) return activeIds.length === 1 && validEmployeeIds.has(activeIds[0]);
-            const pointerIds = [...new Set(activeEmpsWithSims.filter((e: any) =>
-              (e.current_sim_id && String(e.current_sim_id) === String(s.id)) ||
-              (e.current_sim_number && s.mobile_number && isSamePhone(e.current_sim_number, s.mobile_number))
-            ).map((e: any) => String(e.id)))];
-            return pointerIds.length === 1;
-          };
+            [list,emps,activeAssignments,branches]=await Promise.all([
+              tenantRows(supabase,'sim_cards',tenantId,'id,status,service_status,branch_id,current_employee_id,mobile_number,monthly_package_amount,monthly_cost'),
+              tenantRows(supabase,'employees',tenantId,'id,current_sim_id,current_sim_number'),
+              tenantRows(supabase,'sim_assignments',tenantId,'id,sim_card_id,employee_id,status',q=>q.eq('status','ACTIVE')),
+              tenantRows(supabase,'branches',tenantId,'id,city')
+            ]);
+          }catch(err:any){return jsonResponse({error:err.message},503);}
+          const cities=new Map(branches.map(b=>[b.id,b.city]));
+          const totalSims=list.length;
+          const validEmployeeIds=new Set(emps.map(e=>String(e.id)));
+          const activeByCard=new Map<string,Set<string>>(),pointerByCard=new Map<string,Set<string>>(),pointerByPhone=new Map<string,Set<string>>();
+          const add=(map:Map<string,Set<string>>,key:string,id:string)=>{if(key&&id){const group=map.get(key)||new Set<string>();group.add(id);map.set(key,group);}};
+          for(const a of activeAssignments)add(activeByCard,String(a.sim_card_id||''),String(a.employee_id||''));
+          for(const e of emps){if(e.current_sim_id)add(pointerByCard,String(e.current_sim_id),String(e.id));else add(pointerByPhone,normalizePhoneForMatching(e.current_sim_number),String(e.id));}
+          const pointers=(s:any)=>new Set([...(pointerByCard.get(String(s.id))||[]),...(pointerByPhone.get(normalizePhoneForMatching(s.mobile_number))||[])]);
+          const isAssignedCard=(s:any)=>{if(String(s.status||'').toLowerCase()==='lost')return false;const active=activeByCard.get(String(s.id));if(active?.size)return active.size===1&&validEmployeeIds.has([...active][0]);return pointers(s).size===1;};
           const assignedSims = list.filter(isAssignedCard).length;
           const lostSims = list.filter((s: any) => String(s.status || '').toLowerCase() === 'lost').length;
           const serviceState = (s: any) => String(s.service_status || (String(s.status || '').toLowerCase() === 'lost' ? 'Lost' : String(s.status || '').toLowerCase() === 'inactive' ? 'Inactive' : 'Active')).toLowerCase();
           const isAvailableCard = (s: any) => String(s.status || '').toLowerCase() === 'available' && serviceState(s) === 'active'
-            && !s.current_employee_id && !(activeAssignments || []).some((a: any) => String(a.sim_card_id) === String(s.id))
-            && !activeEmpsWithSims.some((e: any) => (e.current_sim_id && String(e.current_sim_id) === String(s.id))
-              || (e.current_sim_number && s.mobile_number && isSamePhone(e.current_sim_number, s.mobile_number)));
+            && !s.current_employee_id && !activeByCard.get(String(s.id))?.size && pointers(s).size===0;
           const availableSims = list.filter(isAvailableCard).length;
           const providerReturnedSims = list.filter((s: any) => ['returned to provider', 'returned_to_provider'].includes(String(s.status || '').toLowerCase())).length;
           const unassignedSims = totalSims - assignedSims - lostSims - providerReturnedSims;
           const stateCounts: Record<string, { total: number; assigned: number; available: number }> = {};
           for (const sim of list) {
-            const state = String(sim.state || '').trim() || 'State not set';
+            const state = cities.get(sim.branch_id) || String(sim.state || '').trim() || 'State not set';
             const counts = stateCounts[state] ||= { total: 0, assigned: 0, available: 0 };
             counts.total++;
             if (isAssignedCard(sim)) counts.assigned++;

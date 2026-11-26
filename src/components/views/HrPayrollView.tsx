@@ -104,6 +104,9 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
   // Filter in Records table
   const [filterProject, setFilterProject] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [salaryPage,setSalaryPage]=useState(1);
+  const salaryPageSize=50;
+  useEffect(()=>setSalaryPage(1),[selectedPeriodKey,searchTerm,filterProject,filterStatus]);
 
   // Advance Modal State
   const [isAdvanceModalOpen, setIsAdvanceModalOpen] = useState(false);
@@ -413,23 +416,30 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
   // Download Salary Sheet CSV
   const handleExportCSV = () => {
     if (records.length === 0) return;
-    const headers = ['Employee Code', 'Employee Name', 'Project', 'Base Salary', 'Commission', 'Overtime', 'Allowances', 'Fines', 'Advances', 'Net Salary', 'IBAN', 'Status'];
+    const headers = ['Employee Code', 'Employee Name', 'Project', 'Base Salary', 'Commission', 'Overtime', 'Allowances', 'Project Deductions','Traffic Fines','Maintenance','Salik','Loan','Advance','Other Approved Deduction','Visa Company Expense (Not Deducted)','Net Salary', 'IBAN', 'Status'];
     const rows = records.map((r) => [
       r.employee_code,
-      `"${r.employee_name}"`,
+      r.employee_name,
       r.project_name || 'Fleet Core',
       r.calculated_base_salary,
       r.calculated_deliveries_commission,
       r.overtime_pay,
       r.allowances_total,
-      r.penalties_total,
-      r.advance_deduction,
+      r.project_source_deduction||0,
+      r.traffic_fines_deduction||0,
+      r.bike_maintenance_deduction||0,
+      r.salik_deduction||0,
+      r.loan_deduction||0,
+      r.advance_deduction||0,
+      r.manual_adjustment_deduction||0,
+      r.visa_company_expense||0,
       r.net_salary,
       r.iban || 'N/A',
       r.status,
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const escapeCell=(value:any)=>{let s=String(value??'');if(typeof value==='string'&&/^[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
+    const csvContent=[headers,...rows].map(row=>row.map(escapeCell).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -438,6 +448,7 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Filtering changes monetary attribution, not only the visible riders.
@@ -473,6 +484,8 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
         bike_maintenance_deduction: 0,
         loan_deduction: 0,
         advance_deduction: 0,
+        visa_company_expense: 0,
+        manual_adjustment_deduction: 0,
         employee_deductions_total: 0,
         penalties_total: sum('deductions_aed'),
         days_worked: sum('days_worked'),
@@ -482,6 +495,9 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
       };
     });
   }, [records, searchTerm, filterProject, filterStatus]);
+  const salaryPages=Math.max(1,Math.ceil(filteredRecords.length/salaryPageSize));
+  const actualSalaryPage=Math.min(salaryPage,salaryPages);
+  const visibleSalaryRecords=filteredRecords.slice((actualSalaryPage-1)*salaryPageSize,actualSalaryPage*salaryPageSize);
 
   const projectList = useMemo(() => Array.from(
     new Set(projectSummaries.map((project) => String(project.project_name)))
@@ -916,14 +932,17 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                   <th className="p-3 text-right">Traffic Fines</th>
                   <th className="p-3 text-right">Bike Maintenance</th>
                   <th className="p-3 text-right">Salik Tolls</th>
+                  <th className="p-3 text-right">Loans</th>
                   <th className="p-3 text-right">Advances</th>
+                  <th className="p-3 text-right">Other Approved</th>
+                  <th className="p-3 text-right">Visa (Company Cost)</th>
                   <th className="p-3 text-right">Net Payable</th>
                   <th className="p-3 text-center">Status</th>
                   <th className="p-3 text-center">Salary Slip</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredRecords.map((rec) => {
+                {visibleSalaryRecords.map((rec) => {
                   const projectDed = rec.project_source_deduction || 0;
                   const fines = rec.traffic_fines_deduction || 0;
                   const maintenance = rec.bike_maintenance_deduction || 0;
@@ -967,9 +986,12 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                       <td className="p-3 text-right font-mono text-amber-600 font-medium">
                         {salik > 0 ? `-AED ${salik.toLocaleString()}` : <span className="text-slate-300 dark:text-slate-600">0</span>}
                       </td>
+                      <td className="p-3 text-right font-mono text-indigo-500 font-medium">{rec.loan_deduction>0?`-AED ${Number(rec.loan_deduction).toLocaleString()}`:0}</td>
                       <td className="p-3 text-right font-mono text-indigo-500 font-medium">
                         {adv > 0 ? `-AED ${adv.toLocaleString()}` : <span className="text-slate-300 dark:text-slate-600">0</span>}
                       </td>
+                      <td className="p-3 text-right font-mono text-rose-500">{rec.manual_adjustment_deduction>0?`-AED ${Number(rec.manual_adjustment_deduction).toLocaleString()}`:0}</td>
+                      <td className="p-3 text-right font-mono text-slate-500">{Number(rec.visa_company_expense||0).toLocaleString()}</td>
                       <td className="p-3 text-right font-mono font-black text-slate-900 dark:text-white text-sm">
                         AED {rec.net_salary?.toLocaleString()}
                       </td>
@@ -1019,9 +1041,12 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
                   <td className="p-3 text-right font-mono text-amber-600">
                     -AED {filteredRecords.reduce((acc, r) => acc + (r.salik_deduction || 0), 0).toLocaleString()}
                   </td>
+                  <td className="p-3 text-right font-mono text-indigo-500">-AED {filteredRecords.reduce((acc,r)=>acc+(r.loan_deduction||0),0).toLocaleString()}</td>
                   <td className="p-3 text-right font-mono text-indigo-500">
                     -AED {filteredRecords.reduce((acc, r) => acc + (r.advance_deduction || 0), 0).toLocaleString()}
                   </td>
+                  <td className="p-3 text-right font-mono text-rose-500">-AED {filteredRecords.reduce((acc,r)=>acc+(r.manual_adjustment_deduction||0),0).toLocaleString()}</td>
+                  <td className="p-3 text-right font-mono text-slate-500">AED {filteredRecords.reduce((acc,r)=>acc+(r.visa_company_expense||0),0).toLocaleString()}</td>
                   <td className="p-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
                     AED {filteredRecords.reduce((acc, r) => acc + (r.net_salary || 0), 0).toLocaleString()}
                   </td>
@@ -1034,6 +1059,7 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
               </tfoot>
             </table>
           </div>
+          <div className="flex items-center justify-between gap-2 p-3 text-xs border-t"><span>{filteredRecords.length ? (actualSalaryPage-1)*salaryPageSize+1 : 0}–{Math.min(actualSalaryPage*salaryPageSize,filteredRecords.length)} of {filteredRecords.length.toLocaleString()} employees</span><div className="flex gap-2 items-center"><button type="button" disabled={actualSalaryPage<=1} onClick={()=>setSalaryPage(actualSalaryPage-1)} className="border rounded-lg px-3 py-1.5 disabled:opacity-40">Previous</button><span>Page {actualSalaryPage} / {salaryPages}</span><button type="button" disabled={actualSalaryPage>=salaryPages} onClick={()=>setSalaryPage(actualSalaryPage+1)} className="border rounded-lg px-3 py-1.5 disabled:opacity-40">Next</button></div></div>
         </div>
       )}
 
@@ -1730,7 +1756,7 @@ export const HrPayrollView: React.FC<HrPayrollViewProps> = ({
             </div>
 
             <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-2xl border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-200">
-              Planned installment: <span className="font-black">AED {Math.round(advanceForm.amount / (advanceForm.installments || 1))} / month</span>. This is a demo ledger entry only; automatic payroll deductions and actual cash disbursement are not enabled yet.
+              Planned installment: <span className="font-black">AED {Math.round(advanceForm.amount / (advanceForm.installments || 1))} / month</span>. This is a demo ledger entry only; approved installments are automatically included in draft payroll recalculation. No actual cash disbursement is enabled.
             </div>
 
             <div className="flex gap-3 pt-2">

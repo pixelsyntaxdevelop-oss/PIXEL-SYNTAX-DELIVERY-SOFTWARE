@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { tenantRows } from './tenantPagination';
 
 /** Isolated demo-tenant payroll API. All routes run AFTER worker session verification. */
 const json = (data: unknown, status = 200) =>
@@ -11,38 +12,37 @@ const validPeriod = (value: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 const round = (value: number) => Math.round(value * 100) / 100;
 
 async function pageRecords(db: SupabaseClient, table: string, tenantId: string, extra?: { period?: string; archived?: boolean }) {
-  const records: any[] = [];
-  const batchSize = 500;
-  for (let index = 0; index < 20; index++) {
-    let q = db.from(table).select('*').eq('tenant_id', tenantId).order('id', { ascending: true }).range(index * batchSize, index * batchSize + batchSize - 1);
-    if (extra?.period) q = q.eq('period_month', extra.period);
-    if (extra?.archived !== undefined) q = q.eq('is_archived', extra.archived);
-    const { data, error } = await q;
-    if (error) throw new Error('Unable to load ' + table + ': ' + error.message);
-    records.push(...(data || []));
-    if ((data || []).length < batchSize) break;
-  }
-  return records;
+  const columns=table==='employees'?'id,employee_code,full_name,current_status,project_name,salary_type,basic_salary,is_archived':table==='vehicles'?'id,plate_number,current_employee_id,vendor_returned':'*';
+  return tenantRows(db,table,tenantId,columns,q=>{
+    if(extra?.period)q=q.eq('period_month',extra.period);
+    if(extra?.archived!==undefined)q=q.eq('is_archived',extra.archived);
+    return q;
+  });
 }
 
 async function monthData(db: SupabaseClient, tenantId: string, periodKey: string) {
   const rows = await pageRecords(db, 'payroll_records', tenantId, { period: periodKey });
-  const [employees, projectLines, projects, deductionApps, deductionLedger, reviewCycles] = await Promise.all([
+  const [employees, projectLines, projects, deductionApps, deductionLedger, reviewCycles, loans, visaExpenses] = await Promise.all([
     pageRecords(db, 'employees', tenantId, { archived: false }),
     pageRecords(db, 'project_payroll_lines', tenantId, { period: periodKey }),
     pageRecords(db, 'projects', tenantId),
     pageRecords(db, 'demo_payroll_deduction_applications', tenantId, { period: periodKey }),
     pageRecords(db, 'demo_payroll_deductions', tenantId),
     pageRecords(db, 'demo_payroll_review_cycles', tenantId, { period: periodKey }),
+    pageRecords(db, 'employee_loans', tenantId),
+    pageRecords(db,'pixel_visa_expenses',tenantId,{period:periodKey}),
   ]);
   const employeeMap = new Map<string, any>(employees.map((emp: any) => [emp.id, emp]));
   const projectMap = new Map<string, any>(projects.map((project: any) => [project.id, project]));
   const deductionById = new Map<string, any>(deductionLedger.map((d: any) => [d.id, d]));
+  const loanById=new Map<string,any>(loans.map(l=>[l.id,l]));
+  const visaByEmployee=new Map<string,number>();
+  for(const v of visaExpenses) visaByEmployee.set(v.employee_id,round((visaByEmployee.get(v.employee_id)||0)+Number(v.amount_aed||0)));
   const applicationsByEmployee = new Map<string, any[]>();
   for (const app of deductionApps) {
     const source = deductionById.get(app.deduction_id);
     const item = {
-      id: app.deduction_id, source_type: source?.source_type || 'OTHER',
+      id: app.deduction_id, source_type: source?.source_type === 'LOAN' && String(loanById.get(String(source.source_id||'').split(':')[0])?.loan_type||'').toUpperCase()==='ADVANCE' ? 'ADVANCE' : source?.source_type || 'OTHER',
       amount_aed: Number(app.amount_aed || 0), reason: source?.reason || '',
       source_id: source?.source_id || '', evidence_reference: source?.evidence_reference || '',
     };
@@ -88,8 +88,9 @@ async function monthData(db: SupabaseClient, tenantId: string, periodKey: string
     const fineTotal = sumDeduction('TRAFFIC_FINE');
     const maintenanceTotal = sumDeduction('BIKE_MAINTENANCE');
     const loanTotal = sumDeduction('LOAN');
+    const advanceTotal = sumDeduction('ADVANCE');
     const manualTotal = sumDeduction('MANUAL_ADJUSTMENT');
-    const externalDeductions = round(fineTotal + maintenanceTotal + loanTotal + manualTotal);
+    const externalDeductions = round(fineTotal + maintenanceTotal + loanTotal + advanceTotal + manualTotal);
 
     const sumLines = (key: string) => round(projectSalaryLines.reduce((v: number, l: any) => v + Number(l[key] || 0), 0));
     const earnedDays = hasProjectLines ? sumLines('days_worked') :
@@ -104,8 +105,9 @@ async function monthData(db: SupabaseClient, tenantId: string, periodKey: string
       project_salary_lines: projectSalaryLines,
       payroll_deduction_items: applied,
       employee_deductions_total: externalDeductions,
+      visa_company_expense:visaByEmployee.get(r.employee_id)||0,
       loan_deduction: loanTotal,
-      advance_deduction: loanTotal,
+      advance_deduction: advanceTotal,
       bike_maintenance_deduction: maintenanceTotal,
       traffic_fines_deduction: fineTotal,
       manual_adjustment_deduction: manualTotal,
@@ -310,6 +312,29 @@ export async function handleDemoPayrollWorkerRoutes(
         })) });
     }
 
+    if (path === '/api/v1/payroll/visa-expenses' && method === 'GET') {
+      const period=new URL(request.url).searchParams.get('period')||'';
+      if(!validPeriod(period))return json({error:'Valid salary month required'},400);
+      const expenses=await pageRecords(db,'pixel_visa_expenses',tenantId,{period});
+      const names=new Map<string,any>();
+      const ids=[...new Set(expenses.map(e=>String(e.employee_id)))];
+      for(let i=0;i<ids.length;i+=100){
+        const {data,error}=await db.from('employees').select('id,employee_code,full_name').eq('tenant_id',tenantId).in('id',ids.slice(i,i+100));
+        if(error)throw new Error(error.message);
+        for(const e of data||[])names.set(e.id,e);
+      }
+      return json({success:true,expenses:expenses.map(e=>({...e,employee_name:names.get(e.employee_id)?.full_name||e.employee_id,employee_code:names.get(e.employee_id)?.employee_code||''})),total_aed:round(expenses.reduce((n,e)=>n+Number(e.amount_aed),0))});
+    }
+    if (path === '/api/v1/payroll/visa-expenses' && method === 'POST') {
+      if(!writable)return json({error:'Payroll access denied'},403);
+      const body:any=await request.json().catch(()=>({}));
+      const period=String(body.period_month||''),employeeId=String(body.employee_id||''),amount=Number(body.amount_aed),reference=String(body.reference||'').trim();
+      if(!validPeriod(period)||!employeeId||!Number.isFinite(amount)||amount<=0||amount>100000||reference.length<3||reference.length>120)return json({error:'Select employee, month, amount and valid reference'},400);
+      const {data:employee,error:lookupError}=await db.from('employees').select('id').eq('tenant_id',tenantId).eq('id',employeeId).eq('is_archived',false).maybeSingle();
+      if(lookupError||!employee)return json({error:'Employee not found'},404);
+      const {data,error}=await db.from('pixel_visa_expenses').insert({tenant_id:tenantId,employee_id:employeeId,period_month:period,amount_aed:round(amount),reference,notes:String(body.notes||'').slice(0,1000),created_by:actor.userId}).select('*').single();
+      return error?json({error:error.message},409):json({success:true,expense:data,salary_deducted:false},201);
+    }
     if (path === '/api/v1/payroll/deductions' && method === 'GET') {
       const period = new URL(request.url).searchParams.get('period') || '';
       if (!validPeriod(period)) return json({ error: 'Valid period required' }, 400);
@@ -411,7 +436,13 @@ export async function handleDemoPayrollWorkerRoutes(
     }
 
     if (method === 'GET' && path === '/api/v1/payroll/employees') {
-      const employees = await pageRecords(db, 'employees', tenantId, { archived: false });
+      const search=(new URL(request.url).searchParams.get('search')||'').trim().replace(/[%,().\\]/g,' ').slice(0,100);
+      let employees:any[];
+      if(search){
+        const {data,error}=await db.from('employees').select('id,employee_code,full_name,current_status').eq('tenant_id',tenantId).eq('is_archived',false).or(`full_name.ilike.%${search}%,employee_code.ilike.%${search}%`).order('full_name').limit(50);
+        if(error)return json({error:error.message},500);
+        employees=data||[];
+      }else employees=await pageRecords(db,'employees',tenantId,{archived:false});
       return json({
         success: true,
         employees: employees.map((e: any) => ({
@@ -497,10 +528,7 @@ export async function handleDemoPayrollWorkerRoutes(
     }
 
     if (method === 'GET' && path === '/api/v1/payroll/structures') {
-      const { data, error } = await db.from('employees')
-        .select('id,full_name,employee_code,basic_salary,salary_type')
-        .eq('tenant_id', tenantId).eq('is_archived', false).limit(500);
-      if (error) return json({ error: error.message }, 500);
+      const data=await pageRecords(db,'employees',tenantId,{archived:false});
       return json({ success: true, structures: (data || []).map((e: any) => ({
         id: e.id, name: e.full_name, employee_code: e.employee_code,
         base_salary: Number(e.basic_salary || 0),
