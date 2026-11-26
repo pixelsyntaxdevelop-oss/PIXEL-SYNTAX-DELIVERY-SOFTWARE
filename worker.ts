@@ -1563,13 +1563,13 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
     try {
       const stats = {company:{count:0,bytes:0},employee:{count:0,bytes:0},vehicle:{count:0,bytes:0},forms:{count:0,bytes:0},other:{count:0,bytes:0}};
       let totalFiles = 0, used = 0;
-      for (const prefix of [`documents/${tenantId}/`, `tenants/${tenantId}/`]) {
+      for (const prefix of [`documents/${tenantId}/`, `tenants/${tenantId}/`, `forms/${tenantId}/`]) {
         let cursor: string | undefined;
         do {
           const page = await r2.list({prefix,limit:1000,...(cursor ? {cursor} : {})});
           for (const item of page.objects) {
             const category = item.key.slice(prefix.length).split('/')[0].toLowerCase();
-            const group = ['company','companies'].includes(category) ? stats.company :
+            const group = prefix.startsWith('forms/') ? stats.forms : ['company','companies'].includes(category) ? stats.company :
               ['employee','employees','rider','riders'].includes(category) ? stats.employee :
               ['vehicle','vehicles','fleet'].includes(category) ? stats.vehicle :
               ['officeform','officeforms','office-forms','signed-forms','forms'].includes(category) ? stats.forms : stats.other;
