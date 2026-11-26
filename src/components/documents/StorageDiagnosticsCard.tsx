@@ -37,6 +37,7 @@ export const StorageDiagnosticsCard: React.FC<StorageDiagnosticsCardProps> = ({
       setData(stats);
       if (onRefresh) onRefresh();
     } catch (err: any) {
+      setData(null);
       setError(err?.message || 'Failed to fetch storage diagnostics');
     } finally {
       setLoading(false);
@@ -84,7 +85,7 @@ export const StorageDiagnosticsCard: React.FC<StorageDiagnosticsCardProps> = ({
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  Direct Storage Mode
+                  {loading ? 'Checking storage' : 'Storage status unavailable'}
                 </span>
               )}
             </div>
@@ -123,17 +124,18 @@ export const StorageDiagnosticsCard: React.FC<StorageDiagnosticsCardProps> = ({
         </div>
       )}
 
+      {data && <>
       {/* Primary Capacity Meter */}
       <div className="mt-6 p-5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
         <div className="flex items-center justify-between text-xs mb-2">
           <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
             <HardDrive className="w-4 h-4 text-blue-600" />
-            <span>Used Document Storage</span>
-            <span className="text-slate-400 font-normal">({data?.totalFiles || 0} active objects)</span>
+            <span>Used R2 Storage</span>
+            <span className="text-slate-400 font-normal">({data?.totalFiles || 0} stored objects)</span>
           </div>
           <div className="font-mono font-bold text-slate-900 dark:text-white">
             <span>{data?.r2UsedStorageFormatted || '0 MB'}</span>
-            <span className="text-slate-400 dark:text-slate-500 font-normal"> / 10 GB Free Tier</span>
+            <span className="text-slate-400 dark:text-slate-500 font-normal"> / 10 GB reference</span>
           </div>
         </div>
 
@@ -141,7 +143,7 @@ export const StorageDiagnosticsCard: React.FC<StorageDiagnosticsCardProps> = ({
         <div className="w-full bg-slate-200 dark:bg-slate-700 h-3 rounded-full overflow-hidden p-0.5">
           <div
             className={`h-full rounded-full transition-all duration-500 ${getMeterColor(data?.warningLevel)}`}
-            style={{ width: `${Math.max(1, Math.min(100, data?.percentageUsed || 0))}%` }}
+            style={{ width: `${Math.max(0, Math.min(100, data?.percentageUsed || 0))}%` }}
           />
         </div>
 
@@ -150,12 +152,16 @@ export const StorageDiagnosticsCard: React.FC<StorageDiagnosticsCardProps> = ({
           <span className="font-semibold text-slate-700 dark:text-slate-300">
             {(data?.percentageUsed || 0).toFixed(1)}% consumed
           </span>
-          <span>10 GB Limit</span>
+          <span>10 GB reference</span>
         </div>
+        <div className="mt-3 text-xs text-slate-600 dark:text-slate-300">Remaining against reference: <strong>{data.remainingFormatted || 'Unavailable'}</strong> · R2 bucket: {data.bucketName}</div>
+        <p className="mt-1 text-[11px] text-slate-500">Live object sizes for this company, including retained versions. 10 GB-month is an account-wide Standard storage free allowance, not a hard bucket capacity. Billing may differ.</p>
+        {data.measuredAt && <p className="mt-1 text-[11px] text-slate-500">Last measured: {new Date(data.measuredAt).toLocaleString()}</p>}
       </div>
 
       {/* Storage Category Breakdown */}
-      <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="mt-5 grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"><div className="flex items-center justify-between text-slate-700 dark:text-slate-300"><span className="text-[11px] font-bold uppercase tracking-wider">Company Docs</span><Database className="w-4 h-4" /></div><p className="text-lg font-black text-slate-900 dark:text-white mt-1">{data.companyDocsFormatted || '0 B'}</p><p className="text-[11px] text-slate-500">{data.companyDocsCount || 0} stored files</p></div>
         {/* Employees */}
         <div className="p-3.5 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
           <div className="flex items-center justify-between text-blue-700 dark:text-blue-300">
@@ -173,7 +179,7 @@ export const StorageDiagnosticsCard: React.FC<StorageDiagnosticsCardProps> = ({
         {/* Vehicles */}
         <div className="p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
           <div className="flex items-center justify-between text-amber-700 dark:text-amber-300">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Fleet Mulkiya</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider">Vehicle Docs</span>
             <Truck className="w-4 h-4" />
           </div>
           <p className="text-lg font-black text-slate-900 dark:text-white mt-1">
@@ -201,28 +207,29 @@ export const StorageDiagnosticsCard: React.FC<StorageDiagnosticsCardProps> = ({
         {/* Imports / Misc */}
         <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
           <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-300">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Import Batches</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider">Other Storage</span>
             <FileText className="w-4 h-4" />
           </div>
           <p className="text-lg font-black text-slate-900 dark:text-white mt-1">
             {data?.importFilesFormatted || '0 MB'}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            {data?.importFilesCount || 0} raw statement files
+            {data?.importFilesCount || 0} other objects
           </p>
         </div>
       </div>
 
+      </>}
       {/* Security Architecture Footnote */}
       <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Private bucket • 15-minute signed pre-signed URLs • SHA-256 deduplicated</span>
+          <span>Private R2 storage • authenticated document access</span>
         </div>
         <div className="flex items-center gap-1 font-mono text-[11px]">
           <span>Path pattern:</span>
           <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-700 dark:text-slate-300">
-            tenants/:tenant_id/:entity_type/:entity_id/:filename
+            documents/:tenant_id/:category/…
           </code>
         </div>
       </div>
