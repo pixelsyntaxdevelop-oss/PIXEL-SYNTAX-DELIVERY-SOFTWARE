@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, CircleDollarSign, Clock3, ShieldCheck } from 'lucide-react';
+import { VisaExpensePanel } from './VisaExpensePanel';
 
 type DeductionRow = {
   id: string; employee_name: string; employee_code: string;
@@ -42,6 +43,7 @@ export const PayrollDeductionWorkflowPanel: React.FC<Props> = ({ period, stage =
   const [fineId, setFineId] = useState('');
   const [loanId, setLoanId] = useState('');
   const [bikeId, setBikeId] = useState('');
+  const [bikeSearch,setBikeSearch]=useState('');
   const [repairAmount, setRepairAmount] = useState('');
   const [repairAt, setRepairAt] = useState('');
   const [repairRef, setRepairRef] = useState('');
@@ -193,10 +195,10 @@ export const PayrollDeductionWorkflowPanel: React.FC<Props> = ({ period, stage =
         <div className="border-t border-slate-200 dark:border-slate-700 pt-3 space-y-2">
           <p className="text-xs font-bold">Bike maintenance deduction candidate</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <select className={field} value={bikeId} onChange={e => setBikeId(e.target.value)} disabled={!isDraft || busy}>
+            <div className="space-y-1"><input className={field} placeholder="Search bike plate" value={bikeSearch} onChange={e=>setBikeSearch(e.target.value)}/><select className={field} value={bikeId} onChange={e => setBikeId(e.target.value)} disabled={!isDraft || busy}>
               <option value="">Choose bike</option>
-              {bikeOptions.map((bike:any) => <option key={bike.id} value={bike.id}>{bike.plate_number}</option>)}
-            </select>
+              {bikeOptions.filter(b=>b.id===bikeId||String(b.plate_number||'').toLowerCase().includes(bikeSearch.toLowerCase())).sort((a,b)=>Number(b.id===bikeId)-Number(a.id===bikeId)).slice(0,100).map((bike:any) => <option key={bike.id} value={bike.id}>{bike.plate_number}</option>)}
+            </select></div>
             <input className={field} type="datetime-local" value={repairAt} onChange={e => setRepairAt(e.target.value)}
               aria-label="Maintenance incident date and time" disabled={!isDraft || busy}/>
             <input className={field} type="number" min="0.01" step="0.01" value={repairAmount}
@@ -218,6 +220,7 @@ export const PayrollDeductionWorkflowPanel: React.FC<Props> = ({ period, stage =
         </div>
       </div>
 
+      <VisaExpensePanel period={period} onUpdated={onUpdated}/>
       <div className="space-y-2">
         <h4 className="text-sm font-black text-slate-900 dark:text-white">Deduction decision register</h4>
         <p className="text-xs text-slate-500">A traffic fine, repair cost or loan must have supporting evidence and approval before salary withholding. Demo references are not real consent.</p>
