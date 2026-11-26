@@ -26,6 +26,7 @@ interface BulkDocumentUploadModalProps {
   onClose: () => void;
   onSuccess: () => void;
   lang?: 'EN' | 'AR';
+  category?: 'Employee' | 'Vehicle' | 'Company';
 }
 
 export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = ({
@@ -33,6 +34,7 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
   onClose,
   onSuccess,
   lang = 'EN',
+  category,
 }) => {
   const [items, setItems] = useState<BulkUploadItem[]>([]);
   const [docTypes, setDocTypes] = useState<DbDocumentType[]>([]);
@@ -49,9 +51,12 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
 
   useEffect(() => {
     if (isOpen) {
+      setItems([]); setTargetEntityId(''); setTargetEntityName(''); setSearchQuery(''); setSearchResults([]);
+      if (category) setTargetEntityType(category);
       documentService.getDocumentTypes().then(setDocTypes).catch(console.error);
+      if (category === 'Company') documentService.searchEntities('company', 'Company').then((found) => { if (found.length === 1) { setTargetEntityId(found[0].id); setTargetEntityName(found[0].name); } }).catch(console.error);
     }
-  }, [isOpen]);
+  }, [isOpen, category]);
 
   useEffect(() => {
     if (searchQuery.trim().length >= 2) {
@@ -94,7 +99,8 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
     Array.from(fileList).forEach((file) => {
       if (file.size > MAX_FILE_SIZE_BYTES) return; // Ignore files > 10MB
 
-      const detected = detectDocumentType(file.name, docTypes);
+      const scopedTypes = docTypes.filter((t) => t.category === targetEntityType.toUpperCase() || (targetEntityType === 'Employee' && t.category === 'OTHER'));
+      const detected = detectDocumentType(file.name, scopedTypes);
       const id = `item_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
       newItems.push({
@@ -103,7 +109,7 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
         entityType: targetEntityType,
         entityId: targetEntityId || 'emp_bulk',
         entityName: targetEntityName || 'Unassigned Document Batch',
-        documentTypeId: detected?.id || docTypes[0]?.id || 'dt_misc',
+        documentTypeId: detected?.id || scopedTypes[0]?.id || 'dt_misc',
         documentTypeName: detected?.name || 'General Document',
         documentNumber: `DOC-${Date.now().toString().slice(-6)}`,
         status: 'Queued',
@@ -225,6 +231,7 @@ export const BulkDocumentUploadModal: React.FC<BulkDocumentUploadModalProps> = (
               <div>
                 <select
                   value={targetEntityType}
+                  disabled={!!category}
                   onChange={(e) => {
                     setTargetEntityType(e.target.value as any);
                     setTargetEntityId('');
