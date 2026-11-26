@@ -314,23 +314,24 @@ export const PayrollSlipModal: React.FC<PayrollSlipModalProps> = ({
                   {/* Loan / Advance Deduction */}
                   <tr>
                     <td className="p-2.5 font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <CreditCard className="w-3.5 h-3.5" /> Employee Advance / Loan
+                      <CreditCard className="w-3.5 h-3.5" /> Employee Advance & Loan
                     </td>
                     <td className="p-2.5 text-slate-500 font-mono text-[11px]">
                       Scheduled monthly installment
                     </td>
                     <td className="p-2.5 text-right font-mono font-bold text-rose-600">
-                      - AED {(record.advance_deduction || record.loan_deduction || 0).toLocaleString()}
+                      - AED {(Number(record.advance_deduction||0)+Number(record.loan_deduction||0)).toLocaleString()}
                     </td>
                   </tr>
 
+                  {Number(record.visa_company_expense||0)>0 && <tr><td className="p-2.5 font-bold text-slate-600">Company-paid visa expense</td><td className="p-2.5 text-slate-500 text-[11px]">AED {Number(record.visa_company_expense).toLocaleString()} · not deducted</td><td className="p-2.5 text-right">AED 0.00</td></tr>}
                   {/* Manual / Other Deductions */}
-                  {record.manual_deductions > 0 && (
+                  {Number(record.manual_adjustment_deduction ?? record.manual_deductions ?? 0) > 0 && (
                     <tr>
                       <td className="p-2.5 font-bold text-slate-600">Other Verified Deductions</td>
                       <td className="p-2.5 text-slate-500 font-mono text-[11px]">Approved adjustment</td>
                       <td className="p-2.5 text-right font-mono font-bold text-rose-600">
-                        - AED {record.manual_deductions.toLocaleString()}
+                        - AED {Number(record.manual_adjustment_deduction ?? record.manual_deductions ?? 0).toLocaleString()}
                       </td>
                     </tr>
                   )}
