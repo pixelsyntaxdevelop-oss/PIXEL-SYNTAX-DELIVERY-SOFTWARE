@@ -1,3 +1,4 @@
+import { tenantRows } from './tenantPagination';
 /**
  * Authoritative Vehicle & Fleet Data Loader and Normalizer
  * Directly interfaces with the Supabase `vehicles` table for `company_allied`.
@@ -422,22 +423,13 @@ export async function fetchAuthoritativeVehicles(
 ): Promise<DbVehicleMasterEnhanced[]> {
   if (supabase) {
     try {
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('*')
-        .eq('tenant_id', tenantId);
-
-      if (!error && Array.isArray(data) && data.length > 0) {
+      const data=await tenantRows(supabase,'vehicles',tenantId);
+      if (data.length > 0) {
         // Query all assignments from vehicle_assignments to preserve active and last history
         let allAssignments: any[] = [];
         try {
-          const { data: asgns, error: assignmentReadError } = await supabase
-            .from('vehicle_assignments')
-            .select('*')
-            .eq('tenant_id', tenantId)
-            .order('created_at', { ascending: false });
-          if (assignmentReadError) throw new Error('Cannot verify vehicle custody history: ' + assignmentReadError.message);
-          if (Array.isArray(asgns)) allAssignments = asgns;
+          allAssignments=await tenantRows(supabase,'vehicle_assignments',tenantId);
+          allAssignments.sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
         } catch (err) {
           // Stale vehicle.status cannot be trusted if history is unavailable.
           // Do not show bikes as available when their actual custody is unknown.
@@ -468,16 +460,8 @@ export async function fetchAuthoritativeVehicles(
         }))];
         const employeeById = new Map<string, any>();
         if (assignedEmployeeIds.length > 0) {
-          const { data: employees, error: employeeError } = await supabase
-            .from('employees')
-            .select('id,employee_code,full_name,first_name,last_name,current_bike_id,current_bike_plate')
-            .eq('tenant_id', tenantId)
-            .in('id', assignedEmployeeIds);
-          if (employeeError) {
-            console.warn('Could not resolve current vehicle rider names:', employeeError.message);
-          } else {
-            for (const employee of employees || []) employeeById.set(String(employee.id), employee);
-          }
+          const employees=await tenantRows(supabase,'employees',tenantId,'id,employee_code,full_name,first_name,last_name,current_bike_id,current_bike_plate');
+          for (const employee of employees) employeeById.set(String(employee.id), employee);
         }
 
         const normalized = data.map((v) => {
