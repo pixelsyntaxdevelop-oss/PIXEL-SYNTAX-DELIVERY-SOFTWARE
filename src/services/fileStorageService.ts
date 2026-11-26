@@ -353,6 +353,17 @@ export const clientStorageService = {
       return { document: response.data.document, r2ObjectKey: '' };
     }
 
+    if (options.entity_type === 'Company' || options.entityType === 'Company') {
+      const form = new FormData();
+      form.append('file', rawFile);
+      form.append('documentTypeId', options.document_type_id || options.documentTypeId || '');
+      if (options.documentId) form.append('documentId', options.documentId);
+      const response = await apiClient.post<{ document: DbEntityDocument }>('/api/erp/storage/company-document-upload', form);
+      if (response.error || !response.data?.document) throw new Error(response.error || 'Company document was not saved');
+      progressHandler?.(100);
+      return { document: response.data.document, r2ObjectKey: '' };
+    }
+
     // 1. Image optimization (preserves high-res on IDs)
     const isOfficial = ['Emirates ID', 'Passport Copy', 'Visa Copy', 'Driving License', 'Vehicle Mulkiya'].some(
       (name) => (options.documentTypeName || options.document_type_name)?.toLowerCase().includes(name.toLowerCase())
