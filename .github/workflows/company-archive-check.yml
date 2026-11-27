@@ -1,0 +1,19 @@
+name: Verify company archive
+on:
+  pull_request:
+    paths:
+      - 'server/companyArchive.ts'
+      - 'scripts/test_company_archive.ts'
+      - '.github/workflows/company-archive-check.yml'
+permissions:
+  contents: read
+jobs:
+  archive-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx tsx scripts/test_company_archive.ts
