@@ -34,6 +34,7 @@ import {
 } from '../../types/database';
 import { DocumentUploadModal } from '../documents/DocumentUploadModal';
 import { DocumentFilePreview } from '../documents/DocumentFilePreview';
+import { CompanyArchivePanel } from '../documents/CompanyArchivePanel';
 import { DocumentReplaceModal } from '../documents/DocumentReplaceModal';
 import { DocumentVersionHistoryModal } from '../documents/DocumentVersionHistoryModal';
 import { DocumentPreviewModal } from '../documents/DocumentPreviewModal';
@@ -290,7 +291,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
 
           <button
             id="btn-open-bulk-r2-upload"
-            onClick={() => setIsBulkUploadOpen(true)}
+            disabled={entityType === 'Company'} onClick={() => setIsBulkUploadOpen(true)}
             className="px-3.5 py-2.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all"
           >
             <Layers className="w-4 h-4 text-orange-400" />
@@ -309,11 +310,11 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
           )}
 
           <button
-            onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }}
+            disabled={entityType === 'Company'} onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }}
             className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all shrink-0"
           >
             <Upload className="w-4 h-4" />
-            {`Upload ${entityType} Documents`}
+            {entityType === 'Company' ? 'Use Company Archive below' : `Upload ${entityType} Documents`}
           </button>
        </div>
       </div>
@@ -326,6 +327,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
           </button>;
         })}
       </div>
+      {entityType === 'Company' && <CompanyArchivePanel/>}
       {/* Cloudflare R2 Storage Diagnostics & Monitor */}
       {showStorageDiagnostics && (
         <StorageDiagnosticsCard onRefresh={loadVaultData} className="animate-in fade-in duration-200" />
@@ -500,10 +502,10 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
         <section aria-label="Matching entity documents" className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedEmployee ? selectedEmployee.name + ' — Saved Documents' : 'Company — Saved Documents'}</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedEmployee ? selectedEmployee.name + ' — Saved Documents' : 'Company — Existing legacy documents'}</h3>
               {selectedEmployee && <p className="text-xs text-slate-500 mt-1">Uploaded documents appear here. Use the button to add missing documents.</p>}
             </div>
-            <div className="flex flex-wrap gap-2"><button type="button" onClick={handleSelectAll} className="inline-flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-semibold">{documents.every(item=>selectedIds.includes(item.id))?'Deselect all':'Select all'}</button><button type="button" onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700"><Upload className="w-4 h-4"/> Upload / Manage Documents</button></div>
+            <div className="flex flex-wrap gap-2"><button type="button" onClick={handleSelectAll} className="inline-flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-semibold">{documents.every(item=>selectedIds.includes(item.id))?'Deselect all':'Select all'}</button><button type="button" disabled={entityType === 'Company'} onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700"><Upload className="w-4 h-4"/> Upload / Manage Documents</button></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {documentGroups.map(({ primary: doc, back, members }) => {
@@ -741,7 +743,7 @@ export const DocumentsVaultView: React.FC<DocumentsVaultViewProps> = ({ lang = '
       </div>}
 
       {!loading && (selectedEmployee || entityType === 'Company') && documents.length === 0 && !loadError && <div className="p-8 text-center text-sm text-slate-500">
-        {selectedEmployee ? <><p className="font-bold text-slate-700 dark:text-slate-300">{selectedEmployee.name} has no uploaded documents yet.</p><button type="button" onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white"><Upload className="w-4 h-4"/> Open Document Boxes</button></> : 'No company documents uploaded yet.'}
+        {selectedEmployee ? <><p className="font-bold text-slate-700 dark:text-slate-300">{selectedEmployee.name} has no uploaded documents yet.</p><button type="button" disabled={entityType === 'Company'} onClick={() => { setUploadMode(entityType); setIsUploadOpen(true); }} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white"><Upload className="w-4 h-4"/> Open Document Boxes</button></> : 'No legacy company documents. New uploads appear in Company Archive above.'}
       </div>}
 
       {/* Modals */}
