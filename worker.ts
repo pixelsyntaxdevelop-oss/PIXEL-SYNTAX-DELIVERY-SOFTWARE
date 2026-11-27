@@ -17,6 +17,7 @@ import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import { handleDemoPayrollWorkerRoutes } from './server/demoPayrollWorker';
 import { tenantRows } from './server/tenantPagination';
+import { companyArchive } from './server/companyArchive';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AUTHORITATIVE_MASTER_EMPLOYEES } from './server/authoritativeEmployees';
 import {
@@ -1525,6 +1526,7 @@ async function handleUserDiagnostic(request: Request, env: any): Promise<Respons
 }
 
 async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cleanPath: string): Promise<Response | null> {
+  const isCompanyArchive = cleanPath === '/api/erp/company-archive' || cleanPath.startsWith('/api/erp/company-archive/');
   const uploadPath = '/api/erp/storage/document-upload';
   const vehicleUploadPath = '/api/erp/storage/vehicle-document-upload';
   const companyUploadPath = '/api/erp/storage/company-document-upload';
@@ -1535,7 +1537,7 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const readPrefix = '/api/erp/storage/read-url/';
   const expiryPrefix = '/api/erp/storage/document-expiry/';
   const archivePrefix = '/api/erp/storage/document-archive/';
-  if (!versionHistoryMatch && !isStorageDiagnostics && !isCompanyLookup && !isScopedExpiry && cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
+  if (!isCompanyArchive && !versionHistoryMatch && !isStorageDiagnostics && !isCompanyLookup && !isScopedExpiry && cleanPath !== uploadPath && cleanPath !== vehicleUploadPath && cleanPath !== companyUploadPath && !cleanPath.startsWith(readPrefix) && !cleanPath.startsWith(expiryPrefix) && !cleanPath.startsWith(archivePrefix) &&
       !(request.method === 'GET' && cleanPath === '/api/erp/documents')) return null;
 
   const supabase = getWorkerSupabaseClient(env);
@@ -1551,6 +1553,7 @@ async function handleEmployeeDocumentWorkerRoutes(request: Request, env: any, cl
   const r2 = env?.R2_BUCKET;
   const url = new URL(request.url);
 
+  if (isCompanyArchive) return companyArchive(request,r2,tenantId,String(session.role||''),String(session.userId||''),cleanPath);
   if (versionHistoryMatch) {
     const documentId = decodeURIComponent(versionHistoryMatch[1]);
     const {data: doc, error: docError} = await supabase.from('entity_documents').select('id,entity_type,entity_id').eq('id',documentId).eq('tenant_id',tenantId).eq('is_archived',false).maybeSingle();
