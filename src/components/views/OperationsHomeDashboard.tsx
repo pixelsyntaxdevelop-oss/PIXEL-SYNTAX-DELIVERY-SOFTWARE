@@ -275,7 +275,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
       document.removeEventListener('focusin', dismissOnOutsideFocus);
     };
   }, [openUnavailableCurrencyHint, lang]);
-  const [roleFilter, setRoleFilter] = useState<'ALL' | 'HR' | 'FLEET' | 'OPERATIONS' | 'ACCOUNTS'>('ALL');
+  const roleFilter = 'ALL' as string;
 
   // Live Metric State
   const [metrics, setMetrics] = useState({
@@ -657,176 +657,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
           </button>
         </div>
       )}
-      {/* Top Welcome Header & Quick Action Row */}
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-              Operations Control Hub
-            </span>
-            <span className="text-xs text-slate-400 font-medium">Dubai & Northern Emirates</span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-            Delivery Operations Command Center
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-            Live telemetry, active rider deployments, asset custody, vehicle compliance, and automated payroll operations.
-          </p>
-        </div>
-
-        {/* Global Quick Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            onClick={() => onNavigateModule('riders_drivers')}
-            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>+ Employee</span>
-          </button>
-          <button
-            onClick={() => onNavigateModule('office_forms_passport')}
-            className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-slate-200 dark:border-slate-700"
-          >
-            <Stamp className="w-3.5 h-3.5 text-amber-500" />
-            <span>Passport Custody</span>
-          </button>
-          <button
-            onClick={() => onNavigateModule('sim_management')}
-            className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-slate-200 dark:border-slate-700"
-          >
-            <Smartphone className="w-3.5 h-3.5 text-sky-500" />
-            <span>Assign SIM</span>
-          </button>
-          <button
-            onClick={() => onNavigateModule('vehicles_fleet')}
-            className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-slate-200 dark:border-slate-700"
-          >
-            <Truck className="w-3.5 h-3.5 text-amber-600" />
-            <span>Assign Bike</span>
-          </button>
-          <button
-            onClick={() => onNavigateModule('traffic_fines_mgmt')}
-            className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-slate-200 dark:border-slate-700"
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
-            <span>+ Traffic Fine</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <span role="status" aria-live="polite" aria-atomic="true" className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-              {refreshing ? 'Refreshing dashboard…' : loadError ? 'Refresh failed' : hasLoadedSuccessfully ? 'Dashboard updated' : ''}
-            </span>
-            <button
-              type="button"
-              onClick={loadDashboardData}
-              disabled={refreshing}
-              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 p-2 text-slate-600 transition-colors hover:bg-slate-200 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-              title={refreshing ? 'Refreshing dashboard data' : 'Refresh dashboard data'}
-              aria-label={refreshing ? 'Refreshing dashboard data' : 'Refresh dashboard data'}
-              aria-busy={refreshing}
-            >
-              <RefreshCw aria-hidden="true" className={`h-4 w-4 ${refreshing ? 'animate-spin text-blue-600' : ''}`} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Role Filter Chips */}
-      <div
-        role="group"
-        aria-label="Filter dashboard by role"
-        className="flex items-center gap-2 max-w-full overflow-x-auto overscroll-x-contain pb-2 text-xs"
-      >
-        <span className="shrink-0 text-slate-400 font-bold uppercase text-[10px] mr-1">Role View:</span>
-        {(['ALL', 'HR', 'FLEET', 'OPERATIONS', 'ACCOUNTS'] as const).map((rf) => (
-          <button
-            key={rf}
-            onClick={() => setRoleFilter(rf)}
-            aria-pressed={roleFilter === rf}
-            className={`shrink-0 min-h-[40px] px-3 py-2 rounded-full font-bold transition-all whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
-              roleFilter === rf
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            {rf === 'ALL' ? '🌟 All Operations' : rf}
-          </button>
-        ))}
-      </div>
-
-      {/* Section 1: ATTENTION REQUIRED / EXCEPTION CENTER (Prominent & Actionable) */}
-      <div className="bg-amber-500/10 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 rounded-2xl p-3 sm:p-5 shadow-xs">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
-          <div className="flex min-w-0 items-start sm:items-center gap-2">
-            <div className="w-7 h-7 bg-amber-500 text-slate-950 rounded-lg flex items-center justify-center font-black">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex flex-wrap items-center gap-2">
-                <span>Attention Required & Operational Exceptions</span>
-                <span className="inline-flex max-w-full items-center rounded-full px-2.5 py-1 sm:px-2 sm:py-0.5 bg-amber-500 text-slate-950 text-xs sm:text-[10px] leading-snug font-extrabold whitespace-normal">
-                  {exceptions.length} Action Items
-                </span>
-              </h2>
-            </div>
-          </div>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
-            Click or press Enter on an item to jump to resolution
-          </span>
-        </div>
-
-        {exceptions.length === 0 ? (
-          <div className="p-4 bg-white/60 dark:bg-slate-900/60 rounded-xl text-center text-xs text-emerald-700 dark:text-emerald-300 font-bold flex items-center justify-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Zero pending exceptions! All employee IDs, asset custody, and fines are compliant.</span>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {exceptions.map((exc) => (
-              <div
-                key={exc.id}
-                role="link"
-                tabIndex={0}
-                aria-label={`${exc.severity.toLowerCase()} severity: ${exc.title}. Open ${exc.actionLabel}`}
-                onClick={() => handleExceptionClick(exc)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    handleExceptionClick(exc);
-                  }
-                }}
-                className="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500/80 shadow-xs cursor-pointer transition-all hover:shadow-md focus-visible:outline-none focus-visible:border-amber-700 focus-visible:ring-4 focus-visible:ring-amber-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:border-amber-300 dark:focus-visible:ring-amber-300/60 dark:focus-visible:ring-offset-slate-950 group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    <span
-                      className={`px-2 py-1 rounded-md text-[10px] sm:text-[9px] font-black uppercase tracking-wider break-words ${
-                        exc.severity === 'CRITICAL'
-                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
-                          : exc.severity === 'HIGH'
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                          : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                      }`}
-                    >
-                      {exc.severity} · {exc.type.replace(/_/g, ' ')}
-                    </span>
-                    <span className="text-xs sm:text-[10px] font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5 group-focus-visible:underline group-focus-visible:underline-offset-2 transition-transform flex items-center gap-0.5">
-                      {exc.actionLabel}
-                      <ChevronRight className="w-3 h-3" />
-                    </span>
-                  </div>
-                  <h4 className="text-sm sm:text-xs font-bold text-slate-900 dark:text-white leading-snug break-words">
-                    {exc.title}
-                  </h4>
-                  <p className="text-xs sm:text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed sm:line-clamp-2 break-words">
-                    {exc.subtitle}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
+      <div className="flex items-center justify-between gap-3"><div><h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Dashboard</h1><p className="text-sm text-slate-500">Company overview</p></div><button type="button" onClick={loadDashboardData} disabled={refreshing} className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"><RefreshCw className={`w-4 h-4 ${refreshing?'animate-spin':''}`}/>Refresh</button></div>
       {/* Section 2: Core Operational KPIs (Live Backend Data) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {/* 1. EMPLOYEES KPI */}
@@ -877,12 +708,12 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             role="link"
             tabIndex={0}
             aria-label="Open Fleet & Bikes module"
-            onClick={() => onNavigateModule('vehicles_fleet')}
+            onClick={() => onNavigateModule('veh_mgmt')}
             onKeyDown={(event) => {
               if (event.target !== event.currentTarget) return;
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                onNavigateModule('vehicles_fleet');
+                onNavigateModule('veh_mgmt');
               }
             }}
             className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-amber-500 transition-all cursor-pointer group"
@@ -919,12 +750,12 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             role="link"
             tabIndex={0}
             aria-label="Open SIM Inventory module"
-            onClick={() => onNavigateModule('sim_management')}
+            onClick={() => onNavigateModule('sim_card_mgmt')}
             onKeyDown={(event) => {
               if (event.target !== event.currentTarget) return;
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                onNavigateModule('sim_management');
+                onNavigateModule('sim_card_mgmt');
               }
             }}
             className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-sky-500 transition-all cursor-pointer group"
@@ -961,12 +792,12 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
             role="link"
             tabIndex={0}
             aria-label="Open Passport Custody module"
-            onClick={() => onNavigateModule('office_forms_passport')}
+            onClick={() => onNavigateModule('passport_mgmt')}
             onKeyDown={(event) => {
               if (event.target !== event.currentTarget) return;
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                onNavigateModule('office_forms_passport');
+                onNavigateModule('passport_mgmt');
               }
             }}
             className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 p-3.5 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-purple-500 transition-all cursor-pointer group"
@@ -1105,14 +936,14 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
               </div>
             </div>
             <div className="space-y-2 mt-2">
-              {metrics.projects.list.slice(0, 3).map((proj) => (
+              {[...metrics.projects.list].sort((a,b)=>b.count-a.count).map((proj) => (
                 <div key={proj.name} className="flex items-center justify-between text-xs">
                   <span className="font-bold text-slate-800 dark:text-slate-200">{proj.name}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-24 bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden hidden sm:block">
                       <div
                         className="bg-indigo-600 h-2 rounded-full"
-                        style={{ width: `${Math.min(100, proj.count * 8)}%` }}
+                        style={{ width: `${Math.min(100, 100 * proj.count / Math.max(1, metrics.employees.total))}%` }}
                       ></div>
                     </div>
                     <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md text-[11px]">
@@ -1126,67 +957,7 @@ export const OperationsHomeDashboard: React.FC<OperationsHomeDashboardProps> = (
         )}
       </div>
 
-      {/* Section 3: Quick Navigation to Enterprise Modules */}
-      <div className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-          Direct Operations Shortcuts
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-          <button
-            onClick={() => onNavigateModule('riders_drivers')}
-            className="p-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl text-left border border-slate-200/60 dark:border-slate-700/60 transition-colors group"
-          >
-            <Users className="w-4 h-4 text-blue-600 mb-1.5" />
-            <div className="text-xs font-bold text-slate-900 dark:text-white">Employee 360</div>
-            <div className="text-[10px] text-slate-400">Master profiles</div>
-          </button>
-
-          <button
-            onClick={() => onNavigateModule('office_forms_passport')}
-            className="p-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-purple-50 dark:hover:bg-slate-800 rounded-xl text-left border border-slate-200/60 dark:border-slate-700/60 transition-colors group"
-          >
-            <Stamp className="w-4 h-4 text-purple-600 mb-1.5" />
-            <div className="text-xs font-bold text-slate-900 dark:text-white">Passports & Forms</div>
-            <div className="text-[10px] text-slate-400">Physical custody</div>
-          </button>
-
-          <button
-            onClick={() => onNavigateModule('vehicles_fleet')}
-            className="p-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-amber-50 dark:hover:bg-slate-800 rounded-xl text-left border border-slate-200/60 dark:border-slate-700/60 transition-colors group"
-          >
-            <Truck className="w-4 h-4 text-amber-600 mb-1.5" />
-            <div className="text-xs font-bold text-slate-900 dark:text-white">Fleet & Bikes</div>
-            <div className="text-[10px] text-slate-400">Handover & depot</div>
-          </button>
-
-          <button
-            onClick={() => onNavigateModule('traffic_fines_mgmt')}
-            className="p-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-xl text-left border border-slate-200/60 dark:border-slate-700/60 transition-colors group"
-          >
-            <AlertTriangle className="w-4 h-4 text-rose-600 mb-1.5" />
-            <div className="text-xs font-bold text-slate-900 dark:text-white">Traffic Fines</div>
-            <div className="text-[10px] text-slate-400">Police & RTA sync</div>
-          </button>
-
-          <button
-            onClick={() => onNavigateModule('hr_payroll')}
-            className="p-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-xl text-left border border-slate-200/60 dark:border-slate-700/60 transition-colors group"
-          >
-            <DollarSign className="w-4 h-4 text-emerald-600 mb-1.5" />
-            <div className="text-xs font-bold text-slate-900 dark:text-white">Split Payroll</div>
-            <div className="text-[10px] text-slate-400">Project calculations</div>
-          </button>
-
-          <button
-            onClick={() => onNavigateModule('rider_portal')}
-            className="p-3 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 rounded-xl text-left border border-indigo-200 dark:border-indigo-800 transition-colors group"
-          >
-            <Sparkles className="w-4 h-4 text-indigo-600 mb-1.5" />
-            <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200">Rider Portal</div>
-            <div className="text-[10px] text-indigo-500">Self-service view</div>
-          </button>
-        </div>
-      </div>
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">{([{label:'Attendance',id:'attendance_daily'},{label:'Visa',id:'recruitment'},{label:'Documents',id:'doc_expiry_mgmt'},{label:'Salik',id:'salik_mgmt'},{label:'Loans',id:'payroll_loan_mgmt'},{label:'Reports',id:'operational_reports'},{label:'Office Forms',id:'forms_list'},{label:'Rider Performance',id:'captain_perf'}] as {label:string;id:NavigationModule}[]).filter(m=>!currentUser || currentUser.isOwner || ['SUPER_ADMIN','COMPANY_ADMIN'].includes(currentUser.role) || currentUser.allowedModules?.includes('ALL') || currentUser.allowedModules?.includes(m.id)).map(m=><button key={m.id} type="button" onClick={()=>onNavigateModule(m.id)} className="flex justify-between items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm text-left">{m.label}<ChevronRight className="w-4 h-4"/></button>)}</section>
     </div>
   );
 };

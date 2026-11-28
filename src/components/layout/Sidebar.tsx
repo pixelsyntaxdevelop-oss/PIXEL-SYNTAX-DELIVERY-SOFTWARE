@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Home,
@@ -35,11 +35,18 @@ import {
   UserCheck,
   X,
   FolderKanban,
+  LayoutDashboard,
+  Building2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { NavigationModule, SystemUserAccount } from '../../types/erp';
 import { LanguageMode } from '../../data/translations';
 
 interface SidebarProps {
+  activeTenantName?: string;
+  activeTenantLogoUrl?: string | null;
+  activeTenantId?: string | null;
   currentModule?: NavigationModule;
   activeModule?: NavigationModule;
   onSelectModule: (module: NavigationModule) => void;
@@ -67,32 +74,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentModule,
   activeModule,
   onSelectModule,
-  collapsed = false,
+  collapsed: controlledCollapsed,
   onToggleCollapse,
   currentUser,
+  activeTenantName,
+  activeTenantLogoUrl,
+  activeTenantId,
   isMobileOpen = false,
   onCloseMobile,
 }) => {
   const selectedMod = activeModule || currentModule || 'doc_expiry_listing';
   const [searchFilter, setSearchFilter] = useState('');
-
-  // Lock background scrolling only while the mobile/tablet drawer is open.
-  useEffect(() => {
-    if (!isMobileOpen || typeof window === 'undefined' || !window.matchMedia('(max-width: 1023px)').matches) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, [isMobileOpen]);
-
-  // Allow keyboard users to dismiss the mobile navigation drawer.
-  useEffect(() => {
-    if (!isMobileOpen || !onCloseMobile) return;
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseMobile();
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [isMobileOpen, onCloseMobile]);
+  const [localCollapsed, setLocalCollapsed] = useState(false);
+  const collapsed = !isMobileOpen && (controlledCollapsed ?? localCollapsed);
+  const toggleCollapse = onToggleCollapse ?? (() => setLocalCollapsed(v => !v));
+  const name = 'Pixel Syntax';
+  const logo = '/pixel-syntax-logo.webp';
+  const [failedLogo, setFailedLogo] = useState<string | null>(null);
 
   const handleSelectModule = (mod: NavigationModule) => {
     onSelectModule(mod);
@@ -125,57 +123,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return allowed.includes(moduleId);
   };
 
-  // Track expanded parent items. Default expand "Vehicle Management", "Attendance Management", "Document Expiry Management", "Office Staff Access"
-  const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({
-    'veh_mgmt': true,
-    'att_mgmt': true,
-    'doc_expiry_mgmt': true,
-    'office_staff_access': true,
-  });
-
-  const toggleExpand = (key: string) => {
-    setExpandedKeys((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  // Keep all submenus closed until explicitly opened (search can reveal matches).
+  const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
 
   const menuSections: MenuSection[] = [
     {
-      title: 'COMMAND CENTER',
+      title: 'OVERVIEW',
       items: [
-        { id: 'operations_dashboard', label: 'Operations Dashboard', icon: Home },
-        { id: 'fleet_dashboard', label: 'Live Fleet Telemetry', icon: Truck },
+        { id: 'operations_dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'fleet_dashboard', label: 'Fleet Dashboard', icon: Truck },
       ],
     },
     {
-      title: 'HUMAN RESOURCES',
+      title: 'PEOPLE',
       items: [
         {
           id: 'riders_drivers',
-          label: 'Employee Management',
+          label: 'Employees',
           icon: Users,
         },
         {
           id: 'recruitment',
-          label: 'Recruitment Pipeline',
+          label: 'Visa',
           icon: UserCheck,
         },
         {
           id: 'att_mgmt',
-          label: 'Attendance Management',
+          label: 'Attendance',
           icon: Calendar,
           subItems: [
-            { id: 'attendance_daily', label: 'Daily Employee Attendance' },
-            { id: 'attendance_monthly', label: 'Monthly Employee Attendance' },
-            { id: 'attendance_holidays', label: 'Holiday Management' },
+            { id: 'attendance_daily', label: 'Daily Attendance' },
+            { id: 'attendance_monthly', label: 'Monthly Attendance' },
+            { id: 'attendance_holidays', label: 'Holidays' },
           ],
         },
         {
           id: 'doc_expiry_mgmt',
-          label: 'Document Expiry Management',
+          label: 'Documents',
           icon: FileText,
         },
         {
           id: 'passport_mgmt',
-          label: 'Passport Management',
+          label: 'Passports',
           icon: Stamp,
         },
         {
@@ -183,49 +172,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: 'Office Forms',
           icon: ClipboardList,
           subItems: [
-            { id: 'forms_create', label: 'Create Employee Forms' },
+            { id: 'forms_create', label: 'Create Form' },
             { id: 'forms_list', label: 'Employee Forms' },
-            { id: 'forms_templates_types', label: 'Form Template Types' },
+            { id: 'forms_templates_types', label: 'Template Types' },
             { id: 'forms_templates', label: 'Form Templates' },
           ],
         },
       ],
     },
     {
-      title: 'DELIVERY & FLEET',
+      title: 'OPERATIONS',
       items: [
         {
           id: 'projects_list',
-          label: 'Project Management',
+          label: 'Projects',
           icon: FolderKanban,
           subItems: [
-            { id: 'projects_list', label: 'Project Master' },
+            { id: 'projects_list', label: 'All Projects' },
             { id: 'projects_create', label: 'Create Project' },
-            { id: 'projects_assignments', label: 'Assignments Directory' },
+            { id: 'projects_assignments', label: 'Assignments' },
             { id: 'projects_assign', label: 'Assign Project' },
             { id: 'projects_transfer', label: 'Transfer Project' },
           ],
         },
-        { id: 'rider_project_mgmt', label: 'Rider Operations Control', icon: Bike },
+        { id: 'rider_project_mgmt', label: 'Rider Operations', icon: Bike },
         { id: 'captain_perf', label: 'Rider Performance', icon: BarChart2 },
-        { id: 'sim_card_mgmt', label: 'SIM Card Management', icon: Smartphone },
-        { id: 'veh_mgmt', label: 'Vehicle Management', icon: Car },
-        { id: 'traffic_fines_mgmt', label: 'Traffic Fines', icon: Ticket },
-        { id: 'salik_mgmt', label: 'Salik Management', icon: Landmark },
       ],
     },
     {
-      title: 'PAYROLL & LOANS',
+      title: 'FLEET',
+      items: [
+        { id: 'sim_card_mgmt', label: 'SIMs', icon: Smartphone },
+        { id: 'veh_mgmt', label: 'Vehicles', icon: Car },
+        { id: 'traffic_fines_mgmt', label: 'Fines', icon: Ticket },
+        { id: 'salik_mgmt', label: 'Salik', icon: Landmark },
+      ],
+    },
+    {
+      title: 'FINANCE',
       items: [
         { id: 'hr_payroll', label: 'Payroll', icon: DollarSign },
-        { id: 'payroll_loan_mgmt', label: 'Loan Management', icon: Landmark },
+        { id: 'payroll_loan_mgmt', label: 'Loans', icon: Landmark },
       ],
     },
     {
-      title: 'REPORTS & TOOLS',
+      title: 'REPORTS',
       items: [
-        { id: 'operational_reports', label: 'Operations Reports & CSV', icon: FileText },
-        { id: 'data_import_center', label: 'Bulk Data Import Center', icon: HardDrive },
+        { id: 'operational_reports', label: 'Reports', icon: FileText },
+        { id: 'data_import_center', label: 'Data Import', icon: HardDrive },
       ],
     },
     {
@@ -233,200 +227,103 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         {
           id: 'office_staff_access',
-          label: 'Office Staff Access',
+          label: 'Staff Access',
           icon: Shield,
           subItems: [
-            { id: 'settings_users', label: 'Staff Accounts & RBAC' },
-            { id: 'roles_permissions', label: 'Role & Permission Master' },
+            { id: 'settings_users', label: 'Staff Accounts' },
+            { id: 'roles_permissions', label: 'Roles & Permissions' },
           ],
         },
-        { id: 'sys_configuration', label: 'System Configuration & Audit', icon: Sliders },
+        { id: 'sys_configuration', label: 'Settings', icon: Sliders },
       ],
     },
   ];
 
   return (
     <>
-      {/* Mobile Drawer Overlay Backdrop */}
       {isMobileOpen && (
-        <div
-          onClick={onCloseMobile}
-          aria-hidden="true"
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"
-        />
+        <div onClick={onCloseMobile} className="fixed inset-0 bg-slate-950/60 z-40 lg:hidden" />
       )}
-
-      <aside
-        aria-label="Main navigation"
-        className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-30 flex flex-col h-[100dvh] lg:h-[100dvh] bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800 transition-transform duration-200 shrink-0 select-none ${
-          isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
-        } ${collapsed ? 'w-[min(88vw,340px)] lg:w-16' : 'w-[min(88vw,340px)] lg:w-72'}`}
-      >
-        {/* Top Header inside Sidebar with Mobile Close Button */}
-        <div className="flex items-center justify-between p-3 border-b border-slate-100 dark:border-slate-800/80 pt-safe">
-          {!collapsed ? (
-            <div className="relative flex-1 min-w-0 mr-2">
-              <input
-                type="text"
-                placeholder="Filter menu..."
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 text-base lg:text-xs px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:border-blue-500 placeholder-slate-400"
-              />
+      <aside aria-label="ERP navigation"
+        className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-30 flex flex-col h-[100dvh] lg:h-screen shrink-0 bg-[#111f36] text-slate-200 border-r border-[#26364c] shadow-xl motion-safe:transition-[width,transform] duration-200 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} ${collapsed ? 'w-16' : 'w-[85vw] max-w-[300px] lg:w-64'}`}>
+        <div className={`shrink-0 border-b border-white/10 pt-safe ${collapsed ? 'p-2' : 'px-3 pt-3 pb-2'}`}>
+          <div className="flex items-center justify-between gap-2">
+            <div className={`min-w-0 flex items-center ${collapsed ? 'justify-center w-full' : 'flex-1 justify-center'}`}>
+              {logo && failedLogo !== logo ? (
+                <div className={`flex items-center justify-center overflow-hidden ${collapsed ? 'w-11 h-10 p-1' : 'w-[176px] h-[64px]'}`}>
+                  <img src={logo} alt={name} referrerPolicy="no-referrer" onError={() => setFailedLogo(logo)}
+                    className="w-full h-full object-contain"  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="bg-[#233b45] text-[#b4e45d] rounded-lg p-2 shrink-0"><Building2 className="w-5 h-5" /></span>
+                  {!collapsed && <span className="text-sm font-semibold text-white truncate">{name}</span>}
+                </div>
+              )}
             </div>
-          ) : null}
-
-          {/* Close button on Mobile */}
-          {onCloseMobile && (
-            <button
-              onClick={onCloseMobile}
-              className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
-              title="Close Navigation Drawer"
-              aria-label="Close navigation drawer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {onCloseMobile && <button type="button" onClick={onCloseMobile} aria-label="Close navigation" className="lg:hidden absolute right-2 top-2 p-2 rounded-lg text-slate-300 hover:bg-white/10"><X className="w-5 h-5" /></button>}
+          </div>
+          {!collapsed && (
+            <>
+              <label className="relative block mt-2">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                <input aria-label="Search menu" type="search" placeholder="Search menu..." value={searchFilter} onChange={e => setSearchFilter(e.target.value)}
+                  className="w-full bg-white/[.06] border border-white/10 rounded-md h-8 pl-8 pr-2 text-xs text-white placeholder:text-slate-400 focus:outline-hidden focus:border-[#a8d96a]" />
+              </label>
+            </>
           )}
         </div>
-
-      {/* Navigation List */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-3 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700" style={{ WebkitOverflowScrolling: "touch" }}>
-        {menuSections.map((sec, secIdx) => {
-          // First filter items by currentUser module permissions
-          const permittedItems = sec.items.filter((item) => {
-            if (isModuleAllowed(item.id)) return true;
-            if (item.subItems && item.subItems.some((sub) => isModuleAllowed(sub.id))) return true;
-            return false;
-          });
-
-          // Then filter items if searching
-          const matchingItems = permittedItems.filter((item) => {
-            if (!searchFilter) return true;
-            const term = searchFilter.toLowerCase();
-            const parentMatch = (item.label || '').toLowerCase().includes(term);
-            const childMatch = item.subItems?.some((sub) =>
-              (sub.label || '').toLowerCase().includes(term)
+        <nav aria-label="Modules" className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2.5 py-2 space-y-2 scrollbar-thin scrollbar-thumb-slate-600">
+          {menuSections.map(sec => {
+            const term = searchFilter.trim().toLowerCase();
+            const permitted = sec.items.filter(item => isModuleAllowed(item.id) || item.subItems?.some(sub => isModuleAllowed(sub.id)));
+            const matching = permitted.filter(item => !term || item.label.toLowerCase().includes(term) || item.subItems?.some(sub => isModuleAllowed(sub.id) && sub.label.toLowerCase().includes(term)));
+            if (!matching.length) return null;
+            return (
+              <div key={sec.title} className="space-y-1">
+                {!collapsed && sec.title !== 'OVERVIEW' && <p className="px-2.5 pt-2 pb-1 text-[10px] font-semibold tracking-[.12em] text-slate-400 uppercase">{sec.title}</p>}
+                {matching.map(item => {
+                  const children = item.subItems?.filter(sub => isModuleAllowed(sub.id)) || [];
+                  const hasChildren = children.length > 0;
+                  const Icon = item.icon;
+                  const active = selectedMod === item.id || children.some(sub => sub.id === selectedMod)
+                    || (item.id === 'riders_drivers' && ['riders_drivers','employees_list','emp_mgmt','employees_create'].includes(selectedMod))
+                    || (item.id === 'passport_mgmt' && ['passport_mgmt','passport_list'].includes(selectedMod));
+                  const expanded = Boolean(term) || (expandedKeys[item.id] ?? false);
+                  return (
+                    <div key={item.id}>
+                      <button type="button" title={item.label} aria-label={item.label} aria-current={active && !hasChildren ? 'page' : undefined} aria-expanded={hasChildren && !collapsed ? expanded : undefined}
+                        onClick={() => {
+                          if (hasChildren) {
+                            if (collapsed) { toggleCollapse(); setExpandedKeys(prev => ({...prev,[item.id]:true})); }
+                            else setExpandedKeys(prev => ({...prev,[item.id]:!expanded}));
+                          } else if (isModuleAllowed(item.id)) handleSelectModule(item.id as NavigationModule);
+                        }}
+                        className={`group w-full flex items-center gap-2.5 rounded-lg min-h-[34px] text-[13px] font-normal motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#b4e45d] ${collapsed ? 'justify-center px-1' : 'px-2.5'} ${active ? 'bg-[#283f57] text-white' : 'text-slate-300 hover:bg-white/[.07] hover:text-white'}`}>
+                        <Icon className={`w-[17px] h-[17px] shrink-0 ${active ? 'text-[#b4e45d]' : 'text-slate-400 group-hover:text-white'}`} />
+                        {!collapsed && <><span className="truncate flex-1 text-left">{item.label}</span>{hasChildren && <ChevronDown className={`w-3.5 h-3.5 text-slate-400 motion-safe:transition-transform ${expanded ? '' : '-rotate-90'}`} />}</>}
+                      </button>
+                      {hasChildren && expanded && !collapsed && (
+                        <div className="ml-[18px] border-l border-white/10 pl-3 py-1 space-y-0.5">
+                          {children.map(sub => <button type="button" key={sub.id} title={sub.label} aria-current={selectedMod === sub.id ? 'page' : undefined} onClick={() => handleSelectModule(sub.id as NavigationModule)}
+                            className={`w-full text-left min-h-[32px] px-2 rounded-md text-[12px] truncate motion-safe:transition-colors focus-visible:outline focus-visible:outline-[#b4e45d] ${selectedMod === sub.id ? 'bg-[#283f57] text-[#c2ef84] font-semibold' : 'text-slate-300 hover:bg-white/[.07] hover:text-white'}`}>{sub.label}</button>)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             );
-            return parentMatch || childMatch;
-          });
-
-          if (matchingItems.length === 0) return null;
-
-          return (
-            <div key={secIdx} className="space-y-0.5">
-              {!collapsed && (
-                <p className="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 mt-2">
-                  {sec.title}
-                </p>
-              )}
-
-              {matchingItems.map((item) => {
-                // Filter sub-items by currentUser module permission
-                const allowedSubItems = item.subItems?.filter((sub) => isModuleAllowed(sub.id));
-                const hasSubItems = allowedSubItems && allowedSubItems.length > 0;
-                const Icon = item.icon;
-                const isExpanded = searchFilter ? true : Boolean(expandedKeys[item.id]);
-
-                const isParentActive =
-                  selectedMod === item.id ||
-                  allowedSubItems?.some((sub) => sub.id === selectedMod) ||
-                  (item.id === 'riders_drivers' &&
-                    ['riders_drivers', 'employees_list', 'emp_mgmt', 'employees_create'].includes(selectedMod)) ||
-                  (item.id === 'passport_mgmt' &&
-                    ['passport_mgmt', 'passport_list'].includes(selectedMod));
-
-                return (
-                  <div key={item.id} className="space-y-0.5">
-                    {/* Parent Menu Item Button */}
-                    <button
-                      onClick={() => {
-                        if (hasSubItems) {
-                          // Expand on phone/tablet without closing the drawer.
-                          toggleExpand(item.id);
-                        } else {
-                          handleSelectModule(item.id as NavigationModule);
-                        }
-                      }}
-                      type="button"
-                      aria-expanded={hasSubItems ? Boolean(isExpanded) : undefined}
-                      aria-controls={hasSubItems ? `erp-nav-group-${item.id}` : undefined}
-                      className={`w-full flex items-center gap-2 px-2.5 py-2.5 lg:py-1.5 min-h-[44px] lg:min-h-0 rounded text-xs font-medium transition-colors ${
-                        isParentActive && !hasSubItems
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
-                      }`}
-                      title={item.label}
-                    >
-                      {/* Left Arrow Icon (▸ when collapsed, ▾ when expanded) */}
-                      {hasSubItems && !collapsed && (
-                        <span className="text-slate-400 dark:text-slate-500 text-[10px] shrink-0 w-3">
-                          {isExpanded ? '▾' : '▸'}
-                        </span>
-                      )}
-
-                      {/* Icon */}
-                      <Icon className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
-
-                      {/* Parent Label */}
-                      {!collapsed && (
-                        <span className="min-w-0 flex-1 text-left font-medium text-[12px] leading-snug whitespace-normal break-words lg:truncate">
-                          {item.label}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* Sub-Items Tree List */}
-                    {hasSubItems && isExpanded && !collapsed && (
-                      <div id={`erp-nav-group-${item.id}`} className="pl-8 pr-1 space-y-0.5 py-0.5">
-                        {allowedSubItems!.map((sub) => {
-                          const isSubActive = selectedMod === sub.id;
-
-                          return (
-                            <button
-                              key={sub.id}
-                              type="button"
-                              onClick={() => handleSelectModule(sub.id as NavigationModule)}
-                              title={sub.label}
-                              className={`w-full text-left py-2.5 lg:py-1 px-2.5 min-h-[44px] lg:min-h-0 rounded text-[11px] leading-snug transition-colors block whitespace-normal break-words lg:truncate ${
-                                isSubActive
-                                  ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-semibold'
-                                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/40'
-                              }`}
-                            >
-                              {sub.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Footer Collapsed View Button / Mobile Close */}
-      <div className="p-3 border-t border-slate-100 dark:border-slate-800/80 pb-safe">
-        <button
-          onClick={onToggleCollapse}
-          className="hidden lg:flex w-full items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {!collapsed && <span>Collapsed View</span>}
-        </button>
-        {onCloseMobile && (
-          <button
-            onClick={onCloseMobile}
-            className="lg:hidden w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[44px]"
-          >
-            <X className="w-4 h-4" />
-            <span>Close Navigation</span>
+          })}
+          {!collapsed && searchFilter.trim() && !menuSections.some(sec => sec.items.some(item => (isModuleAllowed(item.id) || item.subItems?.some(sub => isModuleAllowed(sub.id))) && (item.label.toLowerCase().includes(searchFilter.trim().toLowerCase()) || item.subItems?.some(sub => isModuleAllowed(sub.id) && sub.label.toLowerCase().includes(searchFilter.trim().toLowerCase()))))) && <p className="p-3 text-xs text-slate-400">No matching modules</p>}
+        </nav>
+        <div className="shrink-0 p-2.5 border-t border-white/10 pb-safe">
+          <button type="button" onClick={toggleCollapse} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} className={`hidden lg:flex w-full items-center gap-2 rounded-lg p-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/10 ${collapsed ? 'justify-center' : ''}`}>
+            {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <><PanelLeftClose className="w-4 h-4" /> Collapse sidebar</>}
           </button>
-        )}
-      </div>
-    </aside>
+          {onCloseMobile && <button type="button" onClick={onCloseMobile} className="lg:hidden w-full flex items-center justify-center gap-2 p-3 rounded-lg bg-white/10 text-xs font-semibold text-white"><X className="w-4 h-4"/> Close navigation</button>}
+        </div>
+      </aside>
     </>
   );
 };
