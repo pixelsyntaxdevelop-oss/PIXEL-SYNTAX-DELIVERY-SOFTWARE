@@ -131,7 +131,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'OVERVIEW',
       items: [
         { id: 'operations_dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'fleet_dashboard', label: 'Fleet Dashboard', icon: Truck },
       ],
     },
     {
